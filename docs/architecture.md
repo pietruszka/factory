@@ -26,13 +26,14 @@ After the docs site, the tracked tree is:
     ├── index.md                  # home page
     ├── getting-started.md
     ├── architecture.md
-    ├── 404.md
+    ├── 404.md                    # document title for a missing route
     ├── reference/
     │   ├── scripts.md
     │   ├── configuration.md
     │   └── pages-workflow.md
     └── .vitepress/
-        └── config.ts             # site config, including base: /factory/
+        ├── config.ts             # site config, including base: /factory/
+        └── theme/index.ts        # not-found slot on the default theme
 ```
 
 Generated directories `docs/.vitepress/cache` and `docs/.vitepress/dist` appear after a local build. They are not part of the source tree.
@@ -89,7 +90,7 @@ The dev server still prints a localhost origin. Append `/factory/` when you open
 
 ### Edit links
 
-`themeConfig.editLink` points at `https://github.com/pietruszka/factory/edit/main/docs/:path`. `:path` is the page path inside `docs/`, so the home page edits `docs/index.md` and this page edits `docs/architecture.md`.
+`themeConfig.editLink` points at `https://github.com/pietruszka/factory/edit/main/docs/:path`. `:path` is the page path inside `docs/`, so this page's link edits `docs/architecture.md`. The pattern for the home page would be `docs/index.md`, but the home layout does not render the link.
 
 ### Last updated
 

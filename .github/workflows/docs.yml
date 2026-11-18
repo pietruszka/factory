@@ -3,8 +3,11 @@
 # One-time setup (repository admin): Settings → Pages → Build and deployment
 # → Source: GitHub Actions.
 #
-# This repository is private. GitHub Pages on a private repository requires
-# GitHub Pro, GitHub Team, or GitHub Enterprise Cloud.
+# The repository is public. Pages is already set to GitHub Actions, and the
+# site is public at https://pietruszka.github.io/factory/. A Pages site limited
+# to repository readers requires a GitHub Enterprise Cloud organization. This
+# repository is a user account, so making the repo private would not hide the
+# published site.
 
 name: Deploy docs
 
@@ -19,25 +22,32 @@ on:
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
+# Jobs below set their own permissions. Unspecified scopes are none.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# One Pages deployment at a time. Do not cancel an in-progress deploy.
+# Publishing runs share `pages`. A newer publish waits, and an in-progress
+# deploy is not cancelled. Pull-request builds use a separate group so they
+# cannot cancel a pending publish.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('pages-pr-{0}', github.event.pull_request.number) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      # upload-pages-artifact uses actions/upload-artifact. With explicit
+      # permissions, artifact upload needs actions: write.
+      actions: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -51,10 +61,6 @@ jobs:
       - name: Build with VitePress
         run: npm run docs:build
 
-      - name: Setup Pages
-        if: github.event_name != 'pull_request'
-        uses: actions/configure-pages@v6
-
       - name: Upload artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
@@ -67,10 +73,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     name: Deploy
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
