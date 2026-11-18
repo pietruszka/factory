@@ -39,11 +39,11 @@ No custom theme, logo, or head tags are configured. The default VitePress theme 
 
 The default theme shows the footer on pages without a sidebar. The home page shows it. Guide and reference pages show the sidebar instead.
 
-`editLink` only works for people who can edit the private repository. `:path` is relative to `docs/`.
+`editLink` opens GitHub's editor for people who can push to the repository. `:path` is relative to `docs/`.
 
 ## Navigation and new pages
 
-Adding a Markdown file under `docs/` creates a route, but it does not add a nav or sidebar entry. Update the `nav` and `sidebar` arrays in `docs/.vitepress/config.ts` or the page is reachable only by URL.
+Adding a Markdown file under `docs/` creates a route. Local search indexes that page from its headings and text, with or without a menu entry. Update the `nav` and `sidebar` arrays in `docs/.vitepress/config.ts` when the page should appear in those menus.
 
 Use root-relative links such as `/getting-started` in config and in Markdown. Do not prefix them with `/factory/`; VitePress adds `base` during the build.
 
@@ -54,5 +54,7 @@ Internal links are checked by `docs:build`. A link to a page you removed will fa
 - `srcDir` other than the default. The CLI is invoked as `vitepress <command> docs`, so `docs/` is the project root.
 - `outDir`. Output stays at `docs/.vitepress/dist`, which is what the workflow uploads.
 - `ignoreDeadLinks`. Dead internal links should fail the build.
-- Algolia, Carbon ads, i18n locales, and a custom `theme`. Nothing in the repository calls for them.
+- Algolia, Carbon ads, and i18n locales. Nothing in the repository calls for them.
 - A favicon or logo. None was provided with the repository.
+
+`docs/.vitepress/theme/index.ts` extends the default theme only to fill the `not-found` slot. `docs/404.md` sets the document title for a missing route. VitePress does not render that file's body: the app container in `404.html` is empty, and the theme shows its not-found view instead. The slot keeps the default not-found view and adds links to Getting started and Architecture. Other routes use the default theme unchanged.

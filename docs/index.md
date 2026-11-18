@@ -4,7 +4,7 @@ layout: home
 hero:
   name: factory
   text: Documentation for pietruszka/factory
-  tagline: A private repository with no application source. These pages describe the files that are actually in the tree, and how this site is built and published.
+  tagline: A public repository with no application source. These pages describe the files that are actually in the tree, and how this site is built and published.
   actions:
     - theme: brand
       text: Getting started
@@ -38,14 +38,14 @@ This site is the documentation for the Git repository [pietruszka/factory](https
 
 | Fact | Value |
 | --- | --- |
-| Repository | Private GitHub repository `pietruszka/factory` |
+| Repository | Public GitHub repository `pietruszka/factory` |
 | Default branch | `main` |
 | Application source | None |
 | License file | None |
 | Package | `package.json` exists only to run this docs site |
-| Expected site URL | <https://pietruszka.github.io/factory/> |
+| Public Pages URL | <https://pietruszka.github.io/factory/> |
 
-The published URL works only after a repository admin sets GitHub Pages to deploy from GitHub Actions. That step is manual. See [GitHub Pages workflow](/reference/pages-workflow).
+That address is live. Pages is set to GitHub Actions, and the site is public. See [GitHub Pages workflow](/reference/pages-workflow).
 
 ## Who these pages are for
 

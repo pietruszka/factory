@@ -1,6 +1,6 @@
 # factory
 
-Private repository. There is no application source. The initial commit added this file with only a heading.
+Public repository. There is no application source. The initial commit added this file with only a heading.
 
 Documentation for the repository and for the docs site itself is in [`docs/`](docs/index.md).
 
@@ -13,4 +13,4 @@ npm ci
 npm run docs:dev
 ```
 
-The dev server serves the site at `http://localhost:5173/factory/`.
+Open the URL printed by VitePress. The path is `/factory/`. When port 5173 is free, that URL is `http://localhost:5173/factory/`.

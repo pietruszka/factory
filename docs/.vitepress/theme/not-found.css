@@ -1,0 +1,30 @@
+.vp-not-found-slot .NotFound {
+  padding-bottom: 28px;
+}
+
+.vp-not-found-slot nav {
+  padding: 0 24px 96px;
+  text-align: center;
+}
+
+.vp-not-found-slot p {
+  margin: 0 0 12px;
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+}
+
+.vp-not-found-slot ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vp-not-found-slot a {
+  color: var(--vp-c-brand-1);
+  font-size: 14px;
+  font-weight: 500;
+}

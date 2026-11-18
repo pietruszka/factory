@@ -9,7 +9,7 @@ There is no application to install. The only commands in `package.json` build an
 
 ## Access
 
-[pietruszka/factory](https://github.com/pietruszka/factory) is a private repository. `git clone` requires a GitHub account that can read it.
+[pietruszka/factory](https://github.com/pietruszka/factory) is a public repository. `git clone` does not require a GitHub account. Pushing still requires write access.
 
 ## Prerequisites
 
@@ -62,7 +62,7 @@ Both `docs/.vitepress/dist` and `docs/.vitepress/cache` are listed in `.gitignor
 | Publish pipeline | `.github/workflows/docs.yml` |
 | GitHub landing page | `README.md` |
 
-Each docs page has an "Edit this page on GitHub" link. It opens the editor on `main` for people who can push to the repository. The link is not a public edit form.
+Guide and reference pages have an "Edit this page on GitHub" link. It opens the editor on `main` for people who can push to the repository. The link is not a public edit form. The home page uses the home layout, which does not render that link. Edit `docs/index.md` directly for home-page changes.
 
 ## Next
 
