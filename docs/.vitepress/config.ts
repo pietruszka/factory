@@ -1,11 +1,12 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
 const repository = 'https://github.com/pietruszka/factory'
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: 'factory',
   description:
-    'Documentation for the pietruszka/factory repository: the files in the tree, the VitePress site, and GitHub Pages publishing. The repository has no application source.',
+    'Documentation for the pietruszka/factory repository: the intended factory flow, the files in the tree, the VitePress site, and GitHub Pages publishing. The repository has no application source.',
   lang: 'en-US',
   base: '/factory/',
   lastUpdated: true,
@@ -17,6 +18,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Getting started', link: '/getting-started' },
+      { text: 'Flow', link: '/flow' },
       { text: 'Architecture', link: '/architecture' },
       {
         text: 'Reference',
@@ -32,6 +34,7 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Getting started', link: '/getting-started' },
+          { text: 'End-to-end flow', link: '/flow' },
           { text: 'Architecture', link: '/architecture' },
         ],
       },
@@ -57,4 +60,4 @@ export default defineConfig({
     },
     outline: { level: [2, 3] },
   },
-})
+}))
