@@ -11,6 +11,8 @@ The config is TypeScript, imported through `defineConfig` from `vitepress`, then
 
 `withMermaid` turns `mermaid` fences into diagrams in the browser. [End-to-end flow](/flow) is the page that uses them. GitHub renders the same fences natively. No `mermaid` theme override is set, so the diagrams use Mermaid's default theme. `mermaid` is pinned to 11.17.2 because the plugin accepts Mermaid 10 or 11.
 
+`docs/.vitepress/theme/mermaid.css` resets the line-height and margin of paragraphs inside Mermaid HTML labels. Without that reset, `.vp-doc p` makes the label taller than the box Mermaid measured, and the last line is clipped. The Markdown fences are unchanged, so GitHub's renderer is unaffected.
+
 ## Site options
 
 | Option | Value | Why |

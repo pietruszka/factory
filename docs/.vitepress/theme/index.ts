@@ -4,6 +4,7 @@ import { withBase } from 'vitepress'
 import { h, type FunctionalComponent } from 'vue'
 import type { Theme } from 'vitepress'
 import './not-found.css'
+import './mermaid.css'
 
 const recoveryLinks = [
   ['/getting-started.html', 'Getting started'],

@@ -1,0 +1,12 @@
+/*
+  Mermaid sizes each HTML label, then the page theme restyles the <p>
+  inside it. .vp-doc p uses a 28px line-height. Mermaid measured the
+  label at 1.5 (24px) and set the foreignObject to that height.
+  foreignObject overflow is hidden, so the extra line-height clips the
+  last line of every multi-line node. Reset the label to the line-height
+  Mermaid measured.
+*/
+.vp-doc .mermaid foreignObject p {
+  margin: 0;
+  line-height: 1.5;
+}

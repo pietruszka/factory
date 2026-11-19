@@ -34,7 +34,10 @@ After the docs site, the tracked tree is:
     │   └── pages-workflow.md
     └── .vitepress/
         ├── config.ts             # site config, including base: /factory/
-        └── theme/index.ts        # not-found slot on the default theme
+        └── theme/
+            ├── index.ts          # not-found slot on the default theme
+            ├── mermaid.css       # keep Mermaid HTML labels inside their nodes
+            └── not-found.css
 ```
 
 Generated directories `docs/.vitepress/cache` and `docs/.vitepress/dist` appear after a local build. They are not part of the source tree.
