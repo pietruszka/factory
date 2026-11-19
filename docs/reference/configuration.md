@@ -7,7 +7,9 @@ description: What docs/.vitepress/config.ts sets, and why.
 
 Site configuration is `docs/.vitepress/config.ts`. That file is the source of truth. This page lists the options it sets so a reader can see why they are there. It does not describe every VitePress option.
 
-The config is TypeScript, imported through `defineConfig` from `vitepress`. `package.json` sets `"type": "module"`, and VitePress loads `config.ts` itself. There is no separate compile step.
+The config is TypeScript, imported through `defineConfig` from `vitepress`, then passed through `withMermaid` from `vitepress-plugin-mermaid`. `package.json` sets `"type": "module"`, and VitePress loads `config.ts` itself. There is no separate compile step.
+
+`withMermaid` turns `mermaid` fences into diagrams in the browser. [End-to-end flow](/flow) is the page that uses them. GitHub renders the same fences natively. No `mermaid` theme override is set, so the diagrams use Mermaid's default theme. `mermaid` is pinned to 11.17.2 because the plugin accepts Mermaid 10 or 11.
 
 ## Site options
 
@@ -28,7 +30,7 @@ No custom theme, logo, or head tags are configured. The default VitePress theme 
 
 | Option | Behavior |
 | --- | --- |
-| `nav` | Top links: Getting started, Architecture, and a Reference menu. |
+| `nav` | Top links: Getting started, Flow, Architecture, and a Reference menu. |
 | `sidebar` | Same pages, grouped into Guide and Reference, on every content page. |
 | `search.provider` | `local`. The index is built into the static site. No Algolia key and no external search service. |
 | `editLink.pattern` | `https://github.com/pietruszka/factory/edit/main/docs/:path` |

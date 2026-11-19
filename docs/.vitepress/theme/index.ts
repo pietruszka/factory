@@ -7,6 +7,7 @@ import './not-found.css'
 
 const recoveryLinks = [
   ['/getting-started.html', 'Getting started'],
+  ['/flow.html', 'End-to-end flow'],
   ['/architecture.html', 'Architecture'],
 ] as const
 

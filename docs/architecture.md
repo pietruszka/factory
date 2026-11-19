@@ -5,8 +5,8 @@ description: What is in the factory repository, and how the documentation site i
 
 # Architecture
 
-::: info TODO
-The repository name is `factory`. No file, commit message, or GitHub description defines a product, domain, or runtime behind that name. When application code is added, replace the sections below with the real components and how they depend on each other. The docs pipeline is not the product architecture.
+::: info
+[End-to-end flow](/flow) is the intended product, taken from the MVP requirements. The sections below describe this repository, which still has no application source. When application code is added, replace those sections with the real components. The docs pipeline is not the product architecture.
 :::
 
 ## What the repository contains
@@ -21,10 +21,11 @@ After the docs site, the tracked tree is:
 ├── .gitignore                    # node_modules and VitePress output
 ├── README.md                     # GitHub landing page; points here
 ├── package.json                  # docs:dev, docs:build, docs:preview
-├── package-lock.json             # npm lockfile for VitePress
+├── package-lock.json             # npm lockfile for the docs site
 └── docs/
     ├── index.md                  # home page
     ├── getting-started.md
+    ├── flow.md                   # intended product flow, from the requirements
     ├── architecture.md
     ├── 404.md                    # document title for a missing route
     ├── reference/
@@ -40,7 +41,7 @@ Generated directories `docs/.vitepress/cache` and `docs/.vitepress/dist` appear 
 
 ## What is not here
 
-These are absent. Do not document them as if they existed:
+These are absent. Do not document them as if they existed. [End-to-end flow](/flow) records the requirements for a factory CLI. It is not a map of code in this tree:
 
 - Application or library source (`src/`, packages, binaries)
 - Tests
@@ -98,4 +99,4 @@ The dev server still prints a localhost origin. Append `/factory/` when you open
 
 ### Pages that are intentionally missing
 
-There is no API reference, CLI reference, or configuration reference for an application, because none of those exist. The reference section documents the docs toolchain only: [npm scripts](/reference/scripts), [VitePress config](/reference/configuration), and the [Pages workflow](/reference/pages-workflow).
+There is no API reference or configuration reference for an application, because none of those exist. The commands and folders in [End-to-end flow](/flow) are requirements, not code in this tree. The reference section documents the docs toolchain only: [npm scripts](/reference/scripts), [VitePress config](/reference/configuration), and the [Pages workflow](/reference/pages-workflow).

@@ -27,7 +27,7 @@ cd factory
 npm ci
 ```
 
-`npm ci` installs the tree from the lockfile and fails if `package.json` and `package-lock.json` disagree. The only direct dependency is the dev dependency `vitepress` at 1.6.4, the latest stable release on npm (1.x). VitePress 2 is still a prerelease and is not used here.
+`npm ci` installs the tree from the lockfile and fails if `package.json` and `package-lock.json` disagree. Direct dev dependencies are `vitepress` at 1.6.4 (the latest stable 1.x release; VitePress 2 is still a prerelease and is not used here), `mermaid` at 11.17.2, and `vitepress-plugin-mermaid` at 2.0.17. The Mermaid packages render the diagrams on [End-to-end flow](/flow). GitHub renders those same fences without them.
 
 `npm install` is the command to use when you change dependencies. Commit the updated lockfile with that change.
 
@@ -66,4 +66,4 @@ Guide and reference pages have an "Edit this page on GitHub" link. It opens the 
 
 ## Next
 
-Read [Architecture](/architecture) for the file tree and the publishing pipeline. Script flags and ports are in [npm scripts](/reference/scripts).
+Read [Architecture](/architecture) for the file tree and the publishing pipeline. The intended product flow is [End-to-end flow](/flow). Script flags and ports are in [npm scripts](/reference/scripts).

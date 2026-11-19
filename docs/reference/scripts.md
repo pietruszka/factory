@@ -58,4 +58,4 @@ The `package.json` script itself does not pin a port. CI does not run preview.
 | `npm ci` | CI, and a clean local install from the lockfile |
 | `npm install` | After you change `package.json` dependencies |
 
-The direct dev dependency is `vitepress` version `1.6.4`. `engines.node` asks for Node.js `>=20`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.
+Direct dev dependencies are `vitepress` at `1.6.4`, `mermaid` at `11.17.2`, and `vitepress-plugin-mermaid` at `2.0.17`. `engines.node` asks for Node.js `>=20`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.
