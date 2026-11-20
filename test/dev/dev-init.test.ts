@@ -28,6 +28,13 @@ describe('runDevInit', () => {
     );
     const config = readFileSync(configPath, 'utf8');
     expect(config).toContain('version: 1');
+    expect(config).toContain('models:');
+    expect(config).toContain('planner:');
+    expect(config).toContain('model: "gpt-5.3-codex-high"');
+    expect(config).toContain('reviewer:');
+    expect(config).toContain('temporary: true');
+    expect(config).toContain('visionJudge:');
+    expect(config).toContain('cli: null');
     expect(config).not.toContain('protected-paths');
     expect(existsSync(join(throwawayHome, '.factory'))).toBe(false);
     expect(existsSync(join(unrelatedHome, 'config.yaml'))).toBe(false);
@@ -54,6 +61,9 @@ describe('dev:init entry point', () => {
     expect(existsSync(join(throwawayHome, 'config.yaml'))).toBe(true);
     expect(existsSync(join(throwawayHome, '.factory'))).toBe(false);
     const config = readFileSync(join(throwawayHome, 'config.yaml'), 'utf8');
+    expect(config).toContain('models:');
+    expect(config).toContain('planner:');
+    expect(config).toContain('model: "gpt-5.3-codex-high"');
     expect(config).not.toContain('protected-paths');
   });
 });

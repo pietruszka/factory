@@ -221,6 +221,62 @@ describe.each([
     expect(result.text).toBe('auth failed');
   });
 
+  test('fills missing cursor cost with estimate when a priced model id is provided', () => {
+    if (cli !== 'cursor-agent') {
+      return;
+    }
+    const result = parse(
+      {
+        stdout:
+          '{"type":"result","subtype":"success","is_error":false,"result":"ok","usage":{"inputTokens":1000000,"outputTokens":2000000,"cacheReadTokens":3000000,"cacheWriteTokens":0}}',
+        stderr: '',
+        exitCode: 0,
+        timedOut: false,
+        cliVersion: '2026.11.19-f005e9d',
+      },
+      'claude-opus-5-5-high',
+    );
+    expect(result.cost).toBe(44.6);
+    expect(result.estimated).toBe(true);
+  });
+
+  test('keeps cursor cost_missing when model pricing is unknown', () => {
+    if (cli !== 'cursor-agent') {
+      return;
+    }
+    const result = parse(
+      {
+        stdout:
+          '{"type":"result","subtype":"success","is_error":false,"result":"ok","usage":{"inputTokens":1000000,"outputTokens":2000000,"cacheReadTokens":3000000,"cacheWriteTokens":0}}',
+        stderr: '',
+        exitCode: 0,
+        timedOut: false,
+        cliVersion: '2026.11.19-f005e9d',
+      },
+      'gpt-5.3-codex-high',
+    );
+    expect(result.cost).toBe('cost_missing');
+    expect(result.estimated).toBeUndefined();
+  });
+
+  test('keeps cursor cost_missing when usage object has no known token fields', () => {
+    if (cli !== 'cursor-agent') {
+      return;
+    }
+    const result = parse(
+      {
+        stdout: '{"type":"result","subtype":"success","is_error":false,"result":"ok","usage":{}}',
+        stderr: '',
+        exitCode: 0,
+        timedOut: false,
+        cliVersion: '2026.11.19-f005e9d',
+      },
+      'claude-opus-5-5-high',
+    );
+    expect(result.cost).toBe('cost_missing');
+    expect(result.estimated).toBeUndefined();
+  });
+
   test('sums multi-step OpenCode cost values', () => {
     if (cli !== 'opencode') {
       return;
@@ -237,6 +293,72 @@ describe.each([
     });
     expect(result.status).toBe('ok');
     expect(result.cost).toBe(0.03);
+  });
+
+  test('prefers CLI-reported cost over estimation when cost is present', () => {
+    if (cli !== 'opencode') {
+      return;
+    }
+    const result = parse(
+      {
+        stdout:
+          '{"type":"text","part":{"type":"text","text":"PROBE_OK"}}\n' +
+          '{"type":"step_finish","part":{"type":"step-finish","tokens":{"input":1000000,"output":1000000,"cache":{"read":1000000}},"cost":0.03}}\n',
+        stderr: '',
+        exitCode: 0,
+        timedOut: false,
+        cliVersion: '1.19.5',
+      },
+      'claude-opus-5-5-high',
+    );
+    expect(result.cost).toBe(0.03);
+    expect(result.estimated).toBeUndefined();
+  });
+
+  test('estimates OpenCode cost from summed step tokens and counts reasoning as output', () => {
+    if (cli !== 'opencode') {
+      return;
+    }
+    const result = parse(
+      {
+        stdout:
+          '{"type":"text","part":{"type":"text","text":"PROBE_OK"}}\n' +
+          '{"type":"step_finish","part":{"type":"step-finish","tokens":{"input":1000000,"output":1000000,"reasoning":500000,"cache":{"read":1000000}}}}\n' +
+          '{"type":"step_finish","part":{"type":"step-finish","tokens":{"output":500000,"reasoning":500000,"cache":{"write":1000000}}}}\n',
+        stderr: '',
+        exitCode: 0,
+        timedOut: false,
+        cliVersion: '1.19.5',
+      },
+      'claude-opus-5-5-high',
+    );
+    expect(result.cost).toBe(59.2);
+    expect(result.estimated).toBe(true);
+  });
+
+  test('keeps OpenCode zero-token usage instead of dropping it', () => {
+    if (cli !== 'opencode') {
+      return;
+    }
+    const result = parse({
+      stdout:
+        '{"type":"text","part":{"type":"text","text":"PROBE_OK"}}\n' +
+        '{"type":"step_finish","part":{"type":"step-finish","tokens":{"input":0,"output":0,"reasoning":0,"cache":{"read":0,"write":0}},"cost":0}}\n',
+      stderr: '',
+      exitCode: 0,
+      timedOut: false,
+      cliVersion: '1.19.5',
+    });
+    expect(result.status).toBe('ok');
+    expect(result.usage).toEqual({
+      input: 0,
+      output: 0,
+      reasoning: 0,
+      cache: {
+        read: 0,
+        write: 0,
+      },
+    });
   });
 
   test('uses stderr fallback for OpenCode when no text events are present', () => {

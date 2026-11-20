@@ -4,6 +4,7 @@ import {
   finalizeStepResult,
   fallbackText,
   statusFromExit,
+  withEstimatedCost,
   type StepResult,
 } from './step-result.js';
 
@@ -18,11 +19,63 @@ interface OpenCodeEvent {
   };
 }
 
+interface OpenCodeTokenTotals {
+  input: number;
+  output: number;
+  reasoning: number;
+  cacheRead: number;
+  cacheWrite: number;
+  hasAny: boolean;
+}
+
 function toFiniteNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-export function parseOpenCodeStepResult(input: unknown): StepResult {
+function readStepTokens(tokens: unknown): OpenCodeTokenTotals {
+  if (!tokens || typeof tokens !== 'object' || Array.isArray(tokens)) {
+    return {
+      input: 0,
+      output: 0,
+      reasoning: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      hasAny: false,
+    };
+  }
+
+  const tokenRecord = tokens as Record<string, unknown>;
+  const cache =
+    tokenRecord.cache && typeof tokenRecord.cache === 'object' ? (tokenRecord.cache as Record<string, unknown>) : {};
+
+  const inputValue = toFiniteNumber(tokenRecord.input);
+  const outputValue = toFiniteNumber(tokenRecord.output);
+  const reasoningValue = toFiniteNumber(tokenRecord.reasoning);
+  const cacheReadValue = toFiniteNumber(cache.read);
+  const cacheWriteValue = toFiniteNumber(cache.write);
+
+  const input = inputValue ?? 0;
+  const output = outputValue ?? 0;
+  const reasoning = reasoningValue ?? 0;
+  const cacheRead = cacheReadValue ?? 0;
+  const cacheWrite = cacheWriteValue ?? 0;
+
+  return {
+    input,
+    output,
+    reasoning,
+    cacheRead,
+    cacheWrite,
+    hasAny:
+      inputValue !== undefined ||
+      outputValue !== undefined ||
+      reasoningValue !== undefined ||
+      cacheReadValue !== undefined ||
+      cacheWriteValue !== undefined,
+  };
+}
+
+export function parseOpenCodeStepResult(input: unknown, modelId?: string): StepResult {
   const parsedRaw = RawStepInputSchema.safeParse(input);
   if (!parsedRaw.success) {
     const raw = coerceRawStepInput(input);
@@ -47,6 +100,14 @@ export function parseOpenCodeStepResult(input: unknown): StepResult {
   let sawStepFinish = false;
   let totalCost = 0;
   let hasCost = false;
+  const usageTotals: OpenCodeTokenTotals = {
+    input: 0,
+    output: 0,
+    reasoning: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    hasAny: false,
+  };
 
   const lines = raw.stdout
     .split('\n')
@@ -77,7 +138,13 @@ export function parseOpenCodeStepResult(input: unknown): StepResult {
       if (event.type === 'step_finish') {
         sawStepFinish = true;
         if (event.part.tokens !== undefined) {
-          usage = event.part.tokens;
+          const stepTokens = readStepTokens(event.part.tokens);
+          usageTotals.input += stepTokens.input;
+          usageTotals.output += stepTokens.output;
+          usageTotals.reasoning += stepTokens.reasoning;
+          usageTotals.cacheRead += stepTokens.cacheRead;
+          usageTotals.cacheWrite += stepTokens.cacheWrite;
+          usageTotals.hasAny = usageTotals.hasAny || stepTokens.hasAny;
         }
         const parsedCost = toFiniteNumber(event.part.cost);
         if (parsedCost !== undefined) {
@@ -103,16 +170,30 @@ export function parseOpenCodeStepResult(input: unknown): StepResult {
   if (hasCost) {
     cost = totalCost;
   }
+  if (usageTotals.hasAny) {
+    usage = {
+      input: usageTotals.input,
+      output: usageTotals.output,
+      reasoning: usageTotals.reasoning,
+      cache: {
+        read: usageTotals.cacheRead,
+        write: usageTotals.cacheWrite,
+      },
+    };
+  }
 
   return finalizeStepResult(
-    {
-      status,
-      text,
-      usage,
-      cost,
-      sessionId,
-      cliVersion: raw.cliVersion,
-    },
+    withEstimatedCost(
+      {
+        status,
+        text,
+        usage,
+        cost,
+        sessionId,
+        cliVersion: raw.cliVersion,
+      },
+      modelId,
+    ),
     raw,
   );
 }
