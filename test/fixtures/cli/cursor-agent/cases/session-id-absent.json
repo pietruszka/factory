@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "../probe.json",
+  "raw": {
+    "stdout": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"session-absent\"}\n",
+    "stderr": "",
+    "exitCode": 0,
+    "timedOut": false,
+    "cliVersion": "2026.11.19-f005e9d"
+  }
+}

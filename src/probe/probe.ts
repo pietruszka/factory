@@ -8,7 +8,12 @@ import { runAsMain } from '../dev/run-as-main.js';
 import { assertLive, Budget, BudgetExceeded } from '../dev/live-guard.js';
 import { PROBE_PROMPT } from './prompt.js';
 import { redactProbeValue, buildRedactionValues } from './redact.js';
-import { buildProbeRunnerSpecs, runProbeCli, type ProbeCliName } from './runners.js';
+import {
+  buildProbeRunnerSpecs,
+  readProbeCliVersion,
+  runProbeCli,
+  type ProbeCliName,
+} from './runners.js';
 
 const TEN_MB = 10 * 1024 * 1024;
 const EMAIL_UNRESOLVED_ERROR = 'account email unresolved; cannot redact';
@@ -30,6 +35,9 @@ export interface ProbeFixture {
   exitCode: number | null;
   durationMs: number;
   usage?: unknown;
+  cliVersion: string;
+  cliVersionSource?: 'version_flag' | 'backfilled';
+  cliVersionEvidence?: string;
   /** Cost is unknown when the CLI output did not report any parseable cost field. */
   cost: number | 'unknown';
   /** True when exit is non-zero, signal/error occurs, is_error=true, or budget is exceeded. */
@@ -48,6 +56,7 @@ export interface ProbeRunSummary {
 
 export interface ProbeCostSummary {
   totalReportedCostUsd: number | 'unknown';
+  partialUnknownClis: ProbeCliName[];
   costByCli: Record<ProbeCliName, number | 'unknown'>;
   skippedRedactionEnvNames: string[];
 }
@@ -275,6 +284,7 @@ function writeSummaryFiles(summary: ProbeCostSummary, factoryHome: string, repoR
 function buildFailureFixture(spec: {
   cli: ProbeCliName;
   args: string[];
+  cliVersion?: string;
 }): ProbeFixture {
   return {
     cli: spec.cli,
@@ -284,6 +294,7 @@ function buildFailureFixture(spec: {
     stderr: '',
     exitCode: null,
     durationMs: 0,
+    cliVersion: spec.cliVersion ?? 'unknown',
     cost: 'unknown',
     failed: true,
     budgetExceeded: false,
@@ -337,8 +348,13 @@ export function runProbe(options: RunProbeOptions = {}): ProbeRunSummary {
 
     try {
       if (spec.cli === 'cursor-agent' && !agentAccount.email) {
-        fixture = buildFailureFixture(spec);
+        const version = readProbeCliVersion(spec, childEnv);
+        fixture = buildFailureFixture({ ...spec, cliVersion: version.cliVersion });
+        fixture.cliVersionSource = 'version_flag';
         fixture.error = agentAccount.error ?? EMAIL_UNRESOLVED_ERROR;
+        if (version.error) {
+          fixture.error = `${fixture.error}; ${version.error}`;
+        }
       } else {
         const outcome = runProbeCli(spec, childEnv);
         const extracted = extractUsageAndCost(outcome.stdout, outcome.stderr);
@@ -378,6 +394,8 @@ export function runProbe(options: RunProbeOptions = {}): ProbeRunSummary {
           exitCode: outcome.exitCode,
           durationMs: outcome.durationMs,
           usage: extracted.usage,
+          cliVersion: outcome.cliVersion,
+          cliVersionSource: 'version_flag',
           cost: extracted.cost ?? 'unknown',
           failed:
             extracted.isError ||
@@ -412,8 +430,13 @@ export function runProbe(options: RunProbeOptions = {}): ProbeRunSummary {
     fixtures.push(redactedFixture);
   }
 
+  const unknownCostClis = Object.entries(costByCli)
+    .filter(([, value]) => value === 'unknown')
+    .map(([cli]) => cli as ProbeCliName);
+
   const summary: ProbeCostSummary = {
     totalReportedCostUsd: hasAnyReportedCost ? totalReportedCostUsd : 'unknown',
+    partialUnknownClis: unknownCostClis,
     costByCli,
     skippedRedactionEnvNames: redaction.skippedEnvNames,
   };
@@ -425,7 +448,12 @@ export function runProbe(options: RunProbeOptions = {}): ProbeRunSummary {
     out.write(`failed to write summary: ${message}\n`);
   }
 
-  const printedTotal = hasAnyReportedCost ? `$${totalReportedCostUsd.toFixed(6)}` : 'unknown';
+  const printedTotal =
+    hasAnyReportedCost && unknownCostClis.length > 0
+      ? `$${totalReportedCostUsd.toFixed(6)} (partial: ${unknownCostClis.join(', ')} unknown)`
+      : hasAnyReportedCost
+        ? `$${totalReportedCostUsd.toFixed(6)}`
+        : 'unknown';
   out.write(`Total reported probe cost: ${printedTotal}\n`);
   return {
     factoryHome,

@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "../probe.json",
+  "raw": {
+    "stdout": "{\"type\":\"text\",\"part\":{\"type\":\"text\",\"text\":\"TIMEOUT\"}}\n",
+    "stderr": "",
+    "exitCode": null,
+    "timedOut": true,
+    "cliVersion": "1.19.5"
+  }
+}

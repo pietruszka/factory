@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "../probe.json",
+  "raw": {
+    "stdout": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"session-present\",\"session_id\":\"sid_cursor_123\"}\n",
+    "stderr": "",
+    "exitCode": 0,
+    "timedOut": false,
+    "cliVersion": "2026.11.19-f005e9d"
+  }
+}

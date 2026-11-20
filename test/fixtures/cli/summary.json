@@ -1,8 +1,12 @@
 {
   "totalReportedCostUsd": 0,
+  "partialUnknownClis": [
+    "cursor-agent"
+  ],
   "costByCli": {
     "cursor-agent": "unknown",
     "opencode": 0
   },
-  "skippedRedactionEnvNames": []
+  "skippedRedactionEnvNames": [],
+  "summarySource": "backfilled-from-fac4"
 }

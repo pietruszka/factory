@@ -23,7 +23,12 @@ After adding docs and the first source files, the tracked tree is:
 ├── package.json                  # docs scripts + typecheck, test, dev:init, probe
 ├── package-lock.json             # npm lockfile
 ├── tsconfig.json                 # TypeScript config (strict, NodeNext)
+├── vitest.config.ts              # test setup, including network block
 ├── src/
+│   ├── adapters/
+│   │   ├── step-result.ts        # zod schema for normalized adapter results
+│   │   ├── cursor-agent.ts       # Cursor adapter parser for recorded output
+│   │   └── opencode.ts           # OpenCode adapter parser for recorded output
 │   ├── dev/
 │   │   ├── dev-init.ts           # npm run dev:init entry
 │   │   ├── home.ts               # throwaway FACTORY_HOME resolver and marker guard
@@ -40,11 +45,26 @@ After adding docs and the first source files, the tracked tree is:
 │   │   ├── dev-init.test.ts
 │   │   ├── home.test.ts
 │   │   ├── live-guard.test.ts
+│   │   ├── network-block.test.ts
 │   │   └── private-guard.test.ts
+│   ├── contract/
+│   │   ├── adapter-contract.ts   # shared adapter contract suite
+│   │   └── adapter-contract.test.ts
 │   ├── probe/
 │   │   └── probe.test.ts
+│   ├── setup/
+│   │   └── network-block.ts      # rejects non-localhost fetch/socket calls in tests
+│   ├── support/
+│   │   └── fake-cli.ts           # fixture replay helper for fake CLI processes
 │   └── fixtures/
-│       └── cli/                  # copied probe fixtures for FAC-4/FAC-5
+│       └── cli/
+│           ├── pins.json         # per-CLI pinned versions used by contract tests
+│           ├── cursor-agent/
+│           │   ├── probe.json
+│           │   └── cases/        # derived contract cases from FAC-3 recording
+│           └── opencode/
+│               ├── probe.json
+│               └── cases/        # derived contract cases from FAC-3 recording
 └── docs/
     ├── index.md                  # home page
     ├── getting-started.md

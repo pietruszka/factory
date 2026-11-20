@@ -22,6 +22,9 @@
     "cacheReadTokens": 0,
     "cacheWriteTokens": 0
   },
+  "cliVersion": "2026.11.19-f005e9d",
+  "cliVersionSource": "backfilled",
+  "cliVersionEvidence": "docs/reference/cli-facts.md row 3 (FAC-4)",
   "cost": "unknown",
   "failed": false,
   "budgetExceeded": false

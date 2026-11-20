@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "../probe.json",
+  "raw": {
+    "stdout": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"PROBE_OK\",\"session_id\":\"2e6ed06f-69f9-4a5e-a3ec-64fd96b09ae7\",\"usage\":{\"inputTokens\":13709,\"outputTokens\":7}}\n",
+    "stderr": "",
+    "exitCode": 0,
+    "timedOut": false,
+    "cliVersion": "2026.11.19-f005e9d"
+  }
+}

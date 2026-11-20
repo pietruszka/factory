@@ -23,6 +23,9 @@
       "read": 1856
     }
   },
+  "cliVersion": "1.19.5",
+  "cliVersionSource": "backfilled",
+  "cliVersionEvidence": "docs/reference/cli-facts.md row 3 (FAC-4)",
   "cost": 0,
   "failed": false,
   "budgetExceeded": false
