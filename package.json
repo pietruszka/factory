@@ -1,17 +1,24 @@
 {
   "name": "factory",
   "private": true,
-  "description": "Documentation scripts for the factory repository. There is no application package.",
+  "description": "Factory source code and documentation scripts.",
   "type": "module",
   "scripts": {
+    "dev:init": "tsx src/dev/dev-init.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
+    "@types/node": "^20.17.0",
     "mermaid": "11.17.2",
+    "typescript": "^5.9.3",
     "vitepress": "1.6.4",
-    "vitepress-plugin-mermaid": "2.0.17"
+    "vitepress-plugin-mermaid": "2.0.17",
+    "tsx": "^4.20.6",
+    "vitest": "^1.6.0"
   },
   "engines": {
     "node": ">=20"

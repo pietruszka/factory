@@ -1,6 +1,6 @@
 # factory
 
-Public repository. There is no application source. The initial commit added this file with only a heading.
+Public repository. It now contains early factory source code and documentation. The initial commit added this file with only a heading.
 
 Documentation for the repository and for the docs site itself is in [`docs/`](docs/index.md).
 

@@ -6,22 +6,35 @@ description: What is in the factory repository, and how the documentation site i
 # Architecture
 
 ::: info
-[End-to-end flow](/flow) is the intended product, taken from the MVP requirements. The sections below describe this repository, which still has no application source. When application code is added, replace those sections with the real components. The docs pipeline is not the product architecture.
+[End-to-end flow](/flow) is the intended product, taken from the MVP requirements. The sections below describe this repository's current contents, including the first `src/` and `test/` files. The docs pipeline is not the full product architecture.
 :::
 
 ## What the repository contains
 
-Before this documentation was added, the repository was a single commit whose only file was `README.md`, containing the heading `factory` and nothing else. There is still no application source.
+Before this documentation was added, the repository was a single commit whose only file was `README.md`, containing the heading `factory` and nothing else. The repository now includes initial TypeScript source and tests for dev-home guardrails.
 
-After the docs site, the tracked tree is:
+After adding docs and the first source files, the tracked tree is:
 
 ```text
 .
 ├── .github/workflows/docs.yml    # build, and deploy to GitHub Pages
 ├── .gitignore                    # node_modules and VitePress output
 ├── README.md                     # GitHub landing page; points here
-├── package.json                  # docs:dev, docs:build, docs:preview
-├── package-lock.json             # npm lockfile for the docs site
+├── package.json                  # docs scripts + typecheck, test, dev:init
+├── package-lock.json             # npm lockfile
+├── tsconfig.json                 # TypeScript config (strict, NodeNext)
+├── src/
+│   └── dev/
+│       ├── dev-init.ts           # npm run dev:init entry
+│       ├── home.ts               # throwaway FACTORY_HOME resolver and marker guard
+│       ├── live-guard.ts         # FACTORY_LIVE and budget guard
+│       └── private-guard.ts      # reject private-path access
+├── test/
+│   └── dev/
+│       ├── dev-init.test.ts
+│       ├── home.test.ts
+│       ├── live-guard.test.ts
+│       └── private-guard.test.ts
 └── docs/
     ├── index.md                  # home page
     ├── getting-started.md
@@ -46,8 +59,6 @@ Generated directories `docs/.vitepress/cache` and `docs/.vitepress/dist` appear 
 
 These are absent. Do not document them as if they existed. [End-to-end flow](/flow) records the requirements for a factory CLI. It is not a map of code in this tree:
 
-- Application or library source (`src/`, packages, binaries)
-- Tests
 - A license file (`LICENSE` / `COPYING`)
 - A stated copyright holder
 - `AGENTS.md`, issue templates, or other contributor docs
