@@ -1,0 +1,8 @@
+{
+  "totalReportedCostUsd": 0,
+  "costByCli": {
+    "cursor-agent": "unknown",
+    "opencode": 0
+  },
+  "skippedRedactionEnvNames": []
+}
