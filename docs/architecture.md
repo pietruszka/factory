@@ -20,21 +20,31 @@ After adding docs and the first source files, the tracked tree is:
 ├── .github/workflows/docs.yml    # build, and deploy to GitHub Pages
 ├── .gitignore                    # node_modules and VitePress output
 ├── README.md                     # GitHub landing page; points here
-├── package.json                  # docs scripts + typecheck, test, dev:init
+├── package.json                  # docs scripts + typecheck, test, dev:init, probe
 ├── package-lock.json             # npm lockfile
 ├── tsconfig.json                 # TypeScript config (strict, NodeNext)
 ├── src/
-│   └── dev/
-│       ├── dev-init.ts           # npm run dev:init entry
-│       ├── home.ts               # throwaway FACTORY_HOME resolver and marker guard
-│       ├── live-guard.ts         # FACTORY_LIVE and budget guard
-│       └── private-guard.ts      # reject private-path access
+│   ├── dev/
+│   │   ├── dev-init.ts           # npm run dev:init entry
+│   │   ├── home.ts               # throwaway FACTORY_HOME resolver and marker guard
+│   │   ├── live-guard.ts         # FACTORY_LIVE and budget guard
+│   │   ├── private-guard.ts      # reject private-path access
+│   │   └── run-as-main.ts        # shared CLI main-module guard
+│   └── probe/
+│       ├── probe.ts              # npm run probe entry and orchestration
+│       ├── prompt.ts             # fixed prompt for CLI probes
+│       ├── redact.ts             # probe fixture redaction helpers
+│       └── runners.ts            # per-CLI runner specs and execution
 ├── test/
-│   └── dev/
-│       ├── dev-init.test.ts
-│       ├── home.test.ts
-│       ├── live-guard.test.ts
-│       └── private-guard.test.ts
+│   ├── dev/
+│   │   ├── dev-init.test.ts
+│   │   ├── home.test.ts
+│   │   ├── live-guard.test.ts
+│   │   └── private-guard.test.ts
+│   ├── probe/
+│   │   └── probe.test.ts
+│   └── fixtures/
+│       └── cli/                  # copied probe fixtures for FAC-4/FAC-5
 └── docs/
     ├── index.md                  # home page
     ├── getting-started.md

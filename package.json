@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:init": "tsx src/dev/dev-init.ts",
+    "probe": "tsx src/probe/probe.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "docs:dev": "vitepress dev docs",

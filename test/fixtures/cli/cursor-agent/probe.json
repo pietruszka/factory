@@ -1,0 +1,28 @@
+{
+  "cli": "cursor-agent",
+  "prompt": "Reply with exactly: PROBE_OK",
+  "args": [
+    "-p",
+    "--mode",
+    "ask",
+    "--trust",
+    "--output-format",
+    "json",
+    "--model",
+    "gpt-5.4-nano-none",
+    "Reply with exactly: PROBE_OK"
+  ],
+  "stdout": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"duration_ms\":3313,\"duration_api_ms\":3313,\"result\":\"PROBE_OK\",\"session_id\":\"2e6ed06f-69f9-4a5e-a3ec-64fd96b09ae7\",\"request_id\":\"bac411f3-7927-4af9-8d8c-2233b05e7d6d\",\"usage\":{\"inputTokens\":13709,\"outputTokens\":7,\"cacheReadTokens\":0,\"cacheWriteTokens\":0}}\n",
+  "stderr": "",
+  "exitCode": 0,
+  "durationMs": 8296,
+  "usage": {
+    "inputTokens": 13709,
+    "outputTokens": 7,
+    "cacheReadTokens": 0,
+    "cacheWriteTokens": 0
+  },
+  "cost": "unknown",
+  "failed": false,
+  "budgetExceeded": false
+}

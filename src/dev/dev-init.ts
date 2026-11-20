@@ -1,8 +1,8 @@
 import { writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join } from 'node:path';
 
 import { createDevHome } from './home.js';
+import { runAsMain } from './run-as-main.js';
 
 export function runDevInit(targetPath: string, env: NodeJS.ProcessEnv = process.env): string {
   if (!targetPath) {
@@ -26,14 +26,6 @@ function runCli(argv: string[], env: NodeJS.ProcessEnv): void {
   process.stdout.write(`Created ${configPath}\n`);
 }
 
-const modulePath = fileURLToPath(import.meta.url);
-const invokedPath = process.argv[1] ? resolve(process.argv[1]) : '';
-if (invokedPath && pathToFileURL(invokedPath).href === pathToFileURL(modulePath).href) {
-  try {
-    runCli(process.argv.slice(2), process.env);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(`${message}\n`);
-    process.exitCode = 1;
-  }
-}
+runAsMain(import.meta.url, () => {
+  runCli(process.argv.slice(2), process.env);
+});
