@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { estimateCost } from '../cost/price-table.js';
+
 export const RawStepInputSchema = z.object({
   stdout: z.string(),
   stderr: z.string(),
@@ -15,6 +17,7 @@ export const StepResultSchema = z.strictObject({
   text: z.string(),
   usage: z.unknown().optional(),
   cost: z.union([z.number(), z.literal('cost_missing')]),
+  estimated: z.literal(true).optional(),
   sessionId: z.string().optional(),
   cliVersion: z.string(),
   raw: RawStepInputSchema,
@@ -73,8 +76,25 @@ interface FinalizeCandidate {
   text: string;
   usage?: unknown;
   cost: number | 'cost_missing';
+  estimated?: true;
   sessionId?: string;
   cliVersion: string;
+}
+
+export function withEstimatedCost(candidate: FinalizeCandidate, modelId?: string): FinalizeCandidate {
+  if (!modelId || candidate.cost !== 'cost_missing' || candidate.usage === undefined) {
+    return candidate;
+  }
+  const estimate = estimateCost(candidate.usage, modelId);
+  if (estimate.kind !== 'estimated') {
+    return candidate;
+  }
+
+  return {
+    ...candidate,
+    cost: estimate.usd,
+    estimated: true,
+  };
 }
 
 export function finalizeStepResult(candidate: FinalizeCandidate, raw: RawStepInput): StepResult {

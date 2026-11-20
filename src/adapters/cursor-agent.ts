@@ -4,6 +4,7 @@ import {
   finalizeStepResult,
   fallbackText,
   statusFromExit,
+  withEstimatedCost,
   type StepResult,
 } from './step-result.js';
 
@@ -31,7 +32,7 @@ function parseCursorPayload(stdout: string): CursorResultPayload | undefined {
   return parsed;
 }
 
-export function parseCursorAgentStepResult(input: unknown): StepResult {
+export function parseCursorAgentStepResult(input: unknown, modelId?: string): StepResult {
   const parsedRaw = RawStepInputSchema.safeParse(input);
   if (!parsedRaw.success) {
     const raw = coerceRawStepInput(input);
@@ -76,14 +77,17 @@ export function parseCursorAgentStepResult(input: unknown): StepResult {
   }
 
   return finalizeStepResult(
-    {
-      status,
-      text,
-      usage,
-      cost: 'cost_missing',
-      sessionId,
-      cliVersion: raw.cliVersion,
-    },
+    withEstimatedCost(
+      {
+        status,
+        text,
+        usage,
+        cost: 'cost_missing',
+        sessionId,
+        cliVersion: raw.cliVersion,
+      },
+      modelId,
+    ),
     raw,
   );
 }
