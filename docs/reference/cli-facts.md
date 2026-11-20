@@ -27,6 +27,18 @@ If something could not be fully proven, it is marked **still open** with a worka
 | 8) Recognising a "high fast" model variant in model list (NFR-45) | Recognise by model ID suffix `-high-fast` (e.g. `gpt-5.3-codex-high-fast`). **Evidence:** `agent models`. | Recognise by model IDs containing `-high-fast` where provider exposes it (e.g. `cursor-acp/gpt-5.3-codex-high-fast`). Also, `--variant high` exists for provider-specific reasoning variants. **Evidence:** `opencode models` and `opencode run --help` (`--variant`). |
 | 9) OpenCode-only FR-14 invocation path (custom command/tool/MCP/skill) | N/A | For FR-14 harness-style invocation, `opencode run --command "<cmd>" "<args...>"` is directly supported. Alternative integration paths exist through `opencode mcp` and skill/plugin/config directories, but `--command` is the most direct test hook. **Evidence:** `opencode run --help` (`--command`) and `opencode --help` (`mcp`, `plugin`). |
 
+## Contract tests
+
+FAC-5 adds shared contract tests for adapter parsing with no live CLI calls:
+
+- suite: `test/contract/adapter-contract.test.ts`
+- shared assertions: `test/contract/adapter-contract.ts`
+- pinned CLI versions: `test/fixtures/cli/pins.json`
+- derived per-case fixtures: `test/fixtures/cli/<cli>/cases/*.json` (each file declares `derivedFrom`)
+- probe fixtures now store `cliVersion` and `cliVersionSource`
+- stale-fixture guard: any fixture version older than the pin fails with `stale fixture`
+- test network guard blocks in-process sockets/fetch only; child-process network access is out of scope here
+
 ## Live calls used (4/4)
 
 All live calls were run in a `mktemp` directory under `/tmp` (outside any git repo), with prompt `Reply with exactly: OK`.

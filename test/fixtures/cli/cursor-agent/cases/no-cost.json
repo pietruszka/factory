@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "../probe.json",
+  "raw": {
+    "stdout": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"PROBE_OK\",\"usage\":{\"inputTokens\":123,\"outputTokens\":2}}\n",
+    "stderr": "",
+    "exitCode": 0,
+    "timedOut": false,
+    "cliVersion": "2026.11.19-f005e9d"
+  }
+}

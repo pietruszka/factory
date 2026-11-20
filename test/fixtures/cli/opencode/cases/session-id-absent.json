@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "../probe.json",
+  "raw": {
+    "stdout": "{\"type\":\"text\",\"part\":{\"type\":\"text\",\"text\":\"absent\"}}\n{\"type\":\"step_finish\",\"part\":{\"type\":\"step-finish\",\"tokens\":{\"input\":2,\"output\":1},\"cost\":0.01}}\n",
+    "stderr": "",
+    "exitCode": 0,
+    "timedOut": false,
+    "cliVersion": "1.19.5"
+  }
+}

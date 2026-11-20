@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "../probe.json",
+  "raw": {
+    "stdout": "{\"type\":\"step_start\",\"timestamp\":1,\"sessionID\":\"ses_123\",\"part\":{\"type\":\"step-start\"}}\n{\"type\":\"text\",\"timestamp\":2,\"sessionID\":\"ses_123\",\"part\":{\"type\":\"text\",\"text\":\"PROBE_OK\"}}\n{\"type\":\"step_finish\",\"timestamp\":3,\"sessionID\":\"ses_123\",\"part\":{\"type\":\"step-finish\",\"tokens\":{\"total\":10,\"input\":7,\"output\":3},\"cost\":0}}\n",
+    "stderr": "",
+    "exitCode": 0,
+    "timedOut": false,
+    "cliVersion": "1.19.5"
+  }
+}

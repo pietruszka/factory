@@ -10,6 +10,7 @@ export interface ProbeRunnerSpec {
   cli: ProbeCliName;
   command: string;
   args: string[];
+  versionArgs: string[];
   helpArgs: string[];
   requiredFlags: string[];
   cwd: string;
@@ -22,6 +23,7 @@ export interface ProbeRunnerOutcome {
   exitCode: number | null;
   durationMs: number;
   signal: NodeJS.Signals | null;
+  cliVersion: string;
   errorMessage?: string;
 }
 
@@ -51,6 +53,7 @@ export function buildProbeRunnerSpecs(factoryHome: string): ProbeRunnerSpec[] {
         CURSOR_AGENT_MODEL,
         PROBE_PROMPT,
       ],
+      versionArgs: ['--version'],
       helpArgs: ['--help'],
       requiredFlags: ['-p', '--mode', '--trust', '--output-format', '--model'],
       cwd: join(sandboxRoot, 'probe-cursor-agent'),
@@ -60,6 +63,7 @@ export function buildProbeRunnerSpecs(factoryHome: string): ProbeRunnerSpec[] {
       cli: 'opencode',
       command: 'opencode',
       args: ['run', '--format', 'json', '--model', OPENCODE_MODEL, PROBE_PROMPT],
+      versionArgs: ['--version'],
       helpArgs: ['run', '--help'],
       requiredFlags: ['run', '--format', '--model'],
       cwd: join(sandboxRoot, 'probe-opencode'),
@@ -99,8 +103,49 @@ function validateHelpFlags(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): strin
   return undefined;
 }
 
-export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): ProbeRunnerOutcome {
+export function readProbeCliVersion(
+  spec: ProbeRunnerSpec,
+  env: NodeJS.ProcessEnv,
+): { cliVersion: string; error?: string } {
   mkdirSync(spec.cwd, { recursive: true });
+  const check = spawnSync(spec.command, spec.versionArgs, {
+    cwd: spec.cwd,
+    env,
+    encoding: 'utf8',
+    timeout: 30_000,
+    maxBuffer: TEN_MB,
+  });
+
+  if (check.error) {
+    return { cliVersion: 'unknown', error: `version check failed: ${check.error.message}` };
+  }
+  if (check.status !== 0) {
+    return { cliVersion: 'unknown', error: 'version check failed: non-zero exit' };
+  }
+
+  const output = `${check.stdout ?? ''}\n${check.stderr ?? ''}`
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+  if (!output) {
+    return { cliVersion: 'unknown', error: 'version check failed: empty output' };
+  }
+  return { cliVersion: output };
+}
+
+export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): ProbeRunnerOutcome {
+  const version = readProbeCliVersion(spec, env);
+  if (version.error) {
+    return {
+      stdout: '',
+      stderr: '',
+      exitCode: null,
+      durationMs: 0,
+      signal: null,
+      cliVersion: version.cliVersion,
+      errorMessage: version.error,
+    };
+  }
 
   const helpError = validateHelpFlags(spec, env);
   if (helpError) {
@@ -110,6 +155,7 @@ export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): Prob
       exitCode: null,
       durationMs: 0,
       signal: null,
+      cliVersion: version.cliVersion,
       errorMessage: helpError,
     };
   }
@@ -130,6 +176,7 @@ export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): Prob
     exitCode: result.status,
     durationMs: endedAt - startedAt,
     signal: result.signal,
+    cliVersion: version.cliVersion,
     errorMessage: result.error?.message,
   };
 }

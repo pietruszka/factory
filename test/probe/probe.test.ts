@@ -13,6 +13,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 import { createDevHome } from '../../src/dev/home.js';
 import { runProbe } from '../../src/probe/probe.js';
+import { renderReplayScript, type FakeCliReplay } from '../support/fake-cli.js';
 
 const tempDirs: string[] = [];
 
@@ -40,52 +41,45 @@ function readJsonFile(path: string): unknown {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
-interface FakeCommandResult {
-  exitCode?: number;
-  stdoutLines?: string[];
-  stderrLines?: string[];
-}
-
-function renderFakeResult(result: FakeCommandResult = {}): string {
-  const stdoutLines = result.stdoutLines ?? [];
-  const stderrLines = result.stderrLines ?? [];
-  const exitCode = result.exitCode ?? 0;
-  return [
-    ...stdoutLines.map((line) => `process.stdout.write(${JSON.stringify(`${line}\n`)});`),
-    ...stderrLines.map((line) => `process.stderr.write(${JSON.stringify(`${line}\n`)});`),
-    `process.exit(${exitCode});`,
-  ].join('\n');
-}
-
 function buildAgentCliScript(input: {
-  status?: FakeCommandResult;
+  version?: string;
+  status?: FakeCliReplay;
   beforeStatus?: string;
-  run?: FakeCommandResult;
+  run?: FakeCliReplay;
   beforeRun?: string;
 }): string {
   return [
     'const args = process.argv.slice(2);',
+    "if (args.includes('--version')) {",
+    `  process.stdout.write(${JSON.stringify(`${input.version ?? '2026.11.19-f005e9d'}\n`)});`,
+    '  process.exit(0);',
+    '}',
     "if (args.includes('--help')) {",
     "  process.stdout.write('agent --help supports -p --mode --trust --output-format --model\\n');",
     '  process.exit(0);',
     '}',
     "if (args[0] === 'status') {",
     input.beforeStatus ?? '',
-    renderFakeResult(input.status),
+    renderReplayScript(input.status),
     '}',
     input.beforeRun ?? '',
-    renderFakeResult(input.run),
+    renderReplayScript(input.run),
   ].join('\n');
 }
 
 function buildOpenCodeCliScript(input: {
+  version?: string;
   helpText?: string;
-  run?: FakeCommandResult;
+  run?: FakeCliReplay;
   beforeRun?: string;
 }): string {
   const helpText = input.helpText ?? 'opencode run --help supports run --format --model';
   return [
     'const args = process.argv.slice(2);',
+    "if (args.includes('--version')) {",
+    `  process.stdout.write(${JSON.stringify(`${input.version ?? '1.19.5'}\n`)});`,
+    '  process.exit(0);',
+    '}',
     "if (args[0] === 'run' && args.includes('--help')) {",
     `  process.stdout.write(${JSON.stringify(`${helpText}\n`)});`,
     '  process.exit(0);',
@@ -95,7 +89,7 @@ function buildOpenCodeCliScript(input: {
     '  process.exit(1);',
     '}',
     input.beforeRun ?? '',
-    renderFakeResult(input.run),
+    renderReplayScript(input.run),
   ].join('\n');
 }
 
@@ -259,6 +253,8 @@ process.stdout.write('{}\\n');`;
     expect(typeof agentFixture.durationMs).toBe('number');
     expect(agentFixture.usage).toEqual({ inputTokens: 1 });
     expect(agentFixture.cost).toBe(0.02);
+    expect(agentFixture.cliVersion).toBe('2026.11.19-f005e9d');
+    expect(agentFixture.cliVersionSource).toBe('version_flag');
 
     const opencodeFixture = readJsonFile(opencodeFixturePath) as Record<string, unknown>;
     expect(opencodeFixture.prompt).toBe('Reply with exactly: PROBE_OK');
@@ -271,17 +267,72 @@ process.stdout.write('{}\\n');`;
     expect(typeof opencodeFixture.durationMs).toBe('number');
     expect(opencodeFixture.usage).toEqual({ inputTokens: 2, outputTokens: 3 });
     expect(opencodeFixture.cost).toBe(0.04);
+    expect(opencodeFixture.cliVersion).toBe('1.19.5');
+    expect(opencodeFixture.cliVersionSource).toBe('version_flag');
 
     expect(readJsonFile(copiedAgentFixturePath)).toEqual(agentFixture);
     expect(readJsonFile(copiedOpencodeFixturePath)).toEqual(opencodeFixture);
 
     const summary = readJsonFile(join(factoryHome, 'probe', 'summary.json')) as Record<string, unknown>;
     expect(summary.totalReportedCostUsd).toBe(0.06);
+    expect(summary.partialUnknownClis).toEqual([]);
     expect(summary.costByCli).toEqual({
       'cursor-agent': 0.02,
       opencode: 0.04,
     });
     expect(readJsonFile(join(repoRoot, 'test', 'fixtures', 'cli', 'summary.json'))).toEqual(summary);
+  });
+
+  test('prints partial total when one CLI reports unknown cost', () => {
+    const userHome = makeTempDir('factory-user-home-');
+    const factoryHome = makeValidFactoryHome(userHome);
+    const repoRoot = makeTempDir('factory-repo-root-');
+    const binDir = join(userHome, 'bin');
+    const nodeOnlyDir = createNodeOnlyPathDir();
+    mkdirSync(binDir, { recursive: true });
+
+    writeFakeCli(
+      binDir,
+      'agent',
+      buildAgentCliScript({
+        status: {
+          stdoutLines: [JSON.stringify({ userInfo: { email: 'dev@example.test' } })],
+        },
+        run: {
+          stdoutLines: [JSON.stringify({ usage: { inputTokens: 1 } })],
+        },
+      }),
+    );
+    writeFakeCli(
+      binDir,
+      'opencode',
+      buildOpenCodeCliScript({
+        run: {
+          stdoutLines: [JSON.stringify({ usage: { outputTokens: 2 }, cost: 0.03 })],
+        },
+      }),
+    );
+
+    const { result, output } = runProbeWithCapturedOutput({
+      env: {
+        HOME: userHome,
+        FACTORY_HOME: factoryHome,
+        FACTORY_LIVE: '1',
+        PATH: pathWithFakeBinOnly(binDir, nodeOnlyDir),
+      },
+      repoRoot,
+    });
+
+    expect(result.failed).toBe(false);
+    expect(output).toContain('Total reported probe cost: $0.030000 (partial: cursor-agent unknown)');
+
+    const summary = readJsonFile(join(factoryHome, 'probe', 'summary.json')) as Record<string, unknown>;
+    expect(summary.totalReportedCostUsd).toBe(0.03);
+    expect(summary.partialUnknownClis).toEqual(['cursor-agent']);
+    expect(summary.costByCli).toEqual({
+      'cursor-agent': 'unknown',
+      opencode: 0.03,
+    });
   });
 
   test('records missing cursor agent and successful opencode independently and returns failed result', () => {
@@ -319,7 +370,7 @@ process.stdout.write('{}\\n');`;
       unknown
     >;
     expect(agentFixture.failed).toBe(true);
-    expect(agentFixture.error).toBe('agent CLI not found');
+    expect(String(agentFixture.error)).toContain('agent CLI not found');
 
     const opencodeFixture = readJsonFile(join(factoryHome, 'probe', 'opencode.json')) as Record<
       string,
@@ -329,7 +380,7 @@ process.stdout.write('{}\\n');`;
     expect(opencodeFixture.error).toBeUndefined();
   });
 
-  test('records missing opencode independently and does not copy failed fixture into repo fixtures', () => {
+  test('records opencode help-check failure and does not copy failed fixture into repo fixtures', () => {
     const userHome = makeTempDir('factory-user-home-');
     const factoryHome = makeValidFactoryHome(userHome);
     const repoRoot = makeTempDir('factory-repo-root-');
@@ -346,6 +397,16 @@ process.stdout.write('{}\\n');`;
         },
         run: {
           stdoutLines: [JSON.stringify({ usage: { inputTokens: 1 }, cost: 0.02 })],
+        },
+      }),
+    );
+    writeFakeCli(
+      binDir,
+      'opencode',
+      buildOpenCodeCliScript({
+        helpText: 'opencode run --help supports run and --model only',
+        run: {
+          stdoutLines: [JSON.stringify({ usage: { outputTokens: 1 }, cost: 0.01 })],
         },
       }),
     );
@@ -376,13 +437,13 @@ process.stdout.write('{}\\n');`;
       unknown
     >;
     expect(opencodeFixture.failed).toBe(true);
-    expect(String(opencodeFixture.error)).toContain('help check failed');
+    expect(String(opencodeFixture.error)).toContain('help output is missing expected flags');
     expect(
       () => readFileSync(join(repoRoot, 'test', 'fixtures', 'cli', 'opencode', 'probe.json'), 'utf8'),
     ).toThrow();
   });
 
-  test('fails when help check output misses required flags and still runs the other CLI', () => {
+  test('records opencode version check non-zero failure and still runs the other CLI', () => {
     const userHome = makeTempDir('factory-user-home-');
     const factoryHome = makeValidFactoryHome(userHome);
     const repoRoot = makeTempDir('factory-repo-root-');
@@ -405,12 +466,19 @@ process.stdout.write('{}\\n');`;
     writeFakeCli(
       binDir,
       'opencode',
-      buildOpenCodeCliScript({
-        helpText: 'opencode run --help supports run and --model only',
-        run: {
-          stdoutLines: [JSON.stringify({ usage: { outputTokens: 1 }, cost: 0.01 })],
-        },
-      }),
+      [
+        'const args = process.argv.slice(2);',
+        "if (args.includes('--version')) {",
+        "  process.stderr.write('broken version\\n');",
+        '  process.exit(2);',
+        '}',
+        "if (args[0] === 'run' && args.includes('--help')) {",
+        "  process.stdout.write('opencode run --help supports run --format --model\\n');",
+        '  process.exit(0);',
+        '}',
+        "process.stdout.write('{\"ok\":true}\\n');",
+        'process.exit(0);',
+      ].join('\n'),
     );
 
     const { result } = runProbeWithCapturedOutput({
@@ -436,7 +504,64 @@ process.stdout.write('{}\\n');`;
       unknown
     >;
     expect(opencodeFixture.failed).toBe(true);
-    expect(String(opencodeFixture.error)).toContain('help output is missing expected flags');
+    expect(String(opencodeFixture.error)).toContain('version check failed: non-zero exit');
+  });
+
+  test('records opencode version check empty output failure', () => {
+    const userHome = makeTempDir('factory-user-home-');
+    const factoryHome = makeValidFactoryHome(userHome);
+    const repoRoot = makeTempDir('factory-repo-root-');
+    const binDir = join(userHome, 'bin');
+    const nodeOnlyDir = createNodeOnlyPathDir();
+    mkdirSync(binDir, { recursive: true });
+
+    writeFakeCli(
+      binDir,
+      'agent',
+      buildAgentCliScript({
+        status: {
+          stdoutLines: [JSON.stringify({ userInfo: { email: 'dev@example.test' } })],
+        },
+        run: {
+          stdoutLines: [JSON.stringify({ usage: { inputTokens: 2 }, cost: 0.01 })],
+        },
+      }),
+    );
+    writeFakeCli(
+      binDir,
+      'opencode',
+      [
+        'const args = process.argv.slice(2);',
+        "if (args.includes('--version')) {",
+        "  process.stdout.write('\\n');",
+        '  process.exit(0);',
+        '}',
+        "if (args[0] === 'run' && args.includes('--help')) {",
+        "  process.stdout.write('opencode run --help supports run --format --model\\n');",
+        '  process.exit(0);',
+        '}',
+        "process.stdout.write('{\"ok\":true}\\n');",
+        'process.exit(0);',
+      ].join('\n'),
+    );
+
+    const { result } = runProbeWithCapturedOutput({
+      env: {
+        HOME: userHome,
+        FACTORY_HOME: factoryHome,
+        FACTORY_LIVE: '1',
+        PATH: pathWithFakeBinOnly(binDir, nodeOnlyDir),
+      },
+      repoRoot,
+    });
+
+    expect(result.failed).toBe(true);
+    const opencodeFixture = readJsonFile(join(factoryHome, 'probe', 'opencode.json')) as Record<
+      string,
+      unknown
+    >;
+    expect(opencodeFixture.failed).toBe(true);
+    expect(String(opencodeFixture.error)).toContain('version check failed: empty output');
   });
 
   test('skips cursor probe when account email is unresolved and records explicit fixture error', () => {
@@ -576,6 +701,7 @@ process.stdout.write('{}\\n');`;
     expect(cursorSaved).toContain('[REDACTED]');
     const summary = readJsonFile(join(factoryHome, 'probe', 'summary.json')) as Record<string, unknown>;
     expect(summary.totalReportedCostUsd).toBe('unknown');
+    expect(summary.partialUnknownClis).toEqual(['cursor-agent', 'opencode']);
     expect(summary.skippedRedactionEnvNames).toEqual(['OPENCODE_AUTH']);
   });
 

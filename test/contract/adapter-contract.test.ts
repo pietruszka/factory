@@ -1,0 +1,1 @@
+import './adapter-contract.js';
