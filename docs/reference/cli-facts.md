@@ -15,7 +15,7 @@ If something could not be fully proven, it is marked **still open** with a worka
 
 ## Facts table
 
-**OpenCode provider note (corrected after M0):** OpenCode on the owner's Mac loads the `cursor-acp` plugin, which exposes the Cursor subscription as the `cursor-acp/` provider (174 ids in `opencode models`). `cursor-acp/gpt-5.3-codex-high` is available; `claude-opus-5-5-high` is not (newest Opus there is 4.7). The free `opencode/*` models used in rows 1 to 4 are only part of what OpenCode can run.
+**OpenCode provider note (corrected after M0):** OpenCode on the owner's Mac loads the `cursor-acp` plugin, which exposes the Cursor subscription as the `cursor-acp/` provider (174 ids in `opencode models` on 1.19.5, 286 on 2.3.2). `cursor-acp/gpt-5.3-codex-high` is available. `claude-opus-5-5-high` was not on 1.19.5 (newest Opus 4.7) but is on 2.3.2. The table below was recorded on 1.19.5; see [OpenCode 2.x](#opencode-2-x-2-3-2) for what changed. The free `opencode/*` models used in rows 1 to 4 are only part of what OpenCode can run.
 
 | Item | Cursor agent (`agent`) | OpenCode (`opencode`) |
 | --- | --- | --- |
@@ -28,6 +28,24 @@ If something could not be fully proven, it is marked **still open** with a worka
 | 7) Image input support for a vision judge (D-6) | **Still open**: no explicit image/file-attach flag in `agent --help`. **Workaround:** place image inside workspace and request analysis in ask mode; treat as unverified until a documented image input path is confirmed. **Evidence:** `agent --help` (no attach/file/image option in top-level flags). | Supported with attachments when model supports image input. CLI accepts file attachments via `--file`; docs state image-capable model is required and provider limits still apply. **Evidence:** `opencode run --help` (`--file`) and `curl -fsSL https://raw.githubusercontent.com/anomalyco/opencode/dev/services/site/src/docs/content/attachments.mdx \| rg -n "image|model|attach"`. |
 | 8) Recognising a "high fast" model variant in model list (NFR-45) | Recognise by model ID suffix `-high-fast` (e.g. `gpt-5.3-codex-high-fast`). **Evidence:** `agent models`. | Recognise by model IDs containing `-high-fast` where provider exposes it (e.g. `cursor-acp/gpt-5.3-codex-high-fast`). Also, `--variant high` exists for provider-specific reasoning variants. **Evidence:** `opencode models` and `opencode run --help` (`--variant`). |
 | 9) OpenCode-only FR-14 invocation path (custom command/tool/MCP/skill) | N/A | For FR-14 harness-style invocation, `opencode run --command "<cmd>" "<args...>"` is directly supported. Alternative integration paths exist through `opencode mcp` and skill/plugin/config directories, but `--command` is the most direct test hook. **Evidence:** `opencode run --help` (`--command`) and `opencode --help` (`mcp`, `plugin`). |
+
+## OpenCode 2.x (2.3.2)
+
+The owner upgraded OpenCode to 2.3.2 (Homebrew) on 21 Nov 2026, after M0. All facts above were recorded on 1.19.5. Checked on 2.3.2 with `--help`, `opencode models` and `opencode debug agents` (no model call), plus one live probe:
+
+- **Background service.** Commands talk to a background server (`opencode serve --service`, started by launchd) unless `--standalone` (private server) or `--server <url>` is given.
+- **macOS folder access.** The launchd-started service gets EPERM on `~/Documents`, `~/Desktop` and `~/Downloads`. Any command whose working directory is there fails with `UnexpectedStatus: 500` (service log: `DirectoryAccessDeniedError`). This explains the HTTP 500 from a shell in the factory repo. The probe runner now refuses an OpenCode sandbox in those folders, and preflight lists models from the system temp folder.
+- **Model catalog warms up per directory.** The `cursor-acp` plugin's models load a few seconds after the first request from a directory. The first answers list only its 6 built-in ids, then the full set (286 `cursor-acp/` ids on 21 Nov 2026). `--standalone` starts a fresh server every time and only ever showed the 6 built-in ids, so the factory uses the service, not `--standalone`. Preflight and the probe poll `opencode models` (2 s apart, up to 10 tries) until the wanted ids appear. A non-login, minimal-environment shell works the same as an interactive one once the directory is outside the protected folders.
+- **Opus 5.5 is now available** as `cursor-acp/claude-opus-5-5-high`, next to `cursor-acp/gpt-5.3-codex-high` and `cursor-acp/gpt-5.4-nano-none`.
+- **`run` flags:** `--continue`, `--session`, `--fork`, `--worktree`, `--model` (`provider/model#variant`), `--agent`, `--format` (`default` or `json`), `--file`, `--title`, `--archived`, `--thinking`, `--auto`.
+  - `--command` is gone, so the FR-14 invocation is **still open** again. Workaround: a custom agent selected with `--agent <name>`, or a prompt that names the command.
+  - `--variant` is gone; the variant is now part of the model id (`provider/model#variant`).
+  - `--archived` keeps scripted sessions out of the session list; the probe uses it.
+  - `--auto` auto-approves permissions. The factory never passes it: the probe runner refuses any OpenCode spec containing it, and a test checks this.
+- **Read-only:** the built-in `plan` agent (`--agent plan`) denies edits (bash is still allowed). The probe now uses it. The config workaround still applies for bash.
+- **Version:** `opencode --version` prints `opencode v2.3.2`. The contract suite's version compare now reads the number from either format.
+- **Global skills:** `opencode debug skill` is gone (2.x `debug` has `agents`, `config`, `heap-dump`, `paths`), so global skill loading is **unchecked on 2.x**. Workaround: same as for Cursor agent, confirm it when the front-door skill is built (FR-28).
+- **Live probe, 21 Nov 2026, failed.** `opencode run --format json --archived --agent plan --model cursor-acp/gpt-5.4-nano-none "Reply with exactly: PROBE_OK"` was run once from the probe sandbox, which was then under `~/Documents`. It exited 1 after 90 ms with one event, `{"type":"error","sessionID":"","error":{"type":"unknown","message":"UnexpectedStatus: 500"}}`. No session was created and no model was called. It was not retried. This error shape is now a contract case (`cases/service-error-2x.json`), and the adapter maps it to `exit_nonzero` with the error message as text. **The 2.x success event shape, tokens and cost are still unrecorded.** One more approved run, from a sandbox outside the protected folders, is needed before the pin moves to 2.3.2.
 
 ## Contract tests
 

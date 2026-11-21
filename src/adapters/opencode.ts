@@ -11,6 +11,7 @@ import {
 interface OpenCodeEvent {
   type?: unknown;
   sessionID?: unknown;
+  error?: { message?: unknown };
   part?: {
     text?: unknown;
     tokens?: unknown;
@@ -99,6 +100,8 @@ export function parseOpenCodeStepResult(input: unknown, modelId?: string): StepR
   let text = '';
   let stepText = '';
   let sessionId: string | undefined;
+  let errorText = '';
+  let sawErrorEvent = false;
   let cost: number | 'cost_missing' = 'cost_missing';
   let sawStepFinish = false;
   let totalCost = 0;
@@ -124,15 +127,23 @@ export function parseOpenCodeStepResult(input: unknown, modelId?: string): StepR
         continue;
       }
 
-      if (typeof event.sessionID === 'string') {
+      if (typeof event.sessionID === 'string' && event.sessionID.length > 0) {
         sessionId = event.sessionID;
+      }
+
+      // 2.x emits {"type":"error","sessionID":"","error":{"message":...}} with no part.
+      if (event.type === 'error') {
+        sawErrorEvent = true;
+        if (event.error && typeof event.error === 'object' && typeof event.error.message === 'string') {
+          errorText = event.error.message;
+        }
       }
 
       if (!event.part || typeof event.part !== 'object') {
         continue;
       }
 
-      if (typeof event.part.sessionID === 'string') {
+      if (typeof event.part.sessionID === 'string' && event.part.sessionID.length > 0) {
         sessionId = event.part.sessionID;
       }
       if (event.type === 'step_start') {
@@ -166,12 +177,12 @@ export function parseOpenCodeStepResult(input: unknown, modelId?: string): StepR
     }
   }
 
-  if (status === 'ok' && !sawStepFinish) {
+  if (status === 'ok' && (!sawStepFinish || sawErrorEvent)) {
     status = 'malformed';
   }
 
   if (!text) {
-    text = raw.stderr.trim();
+    text = errorText || raw.stderr.trim();
   }
 
   if (hasCost) {

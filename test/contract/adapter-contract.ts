@@ -51,12 +51,12 @@ function readProbe(cli: CliName): RawStepFixture {
 }
 
 function parseNumericCore(version: string): number[] {
-  return version
-    .replace(/^v/i, '')
-    .split('-')[0]
-    .split('.')
-    .map((part) => Number(part))
-    .filter((part) => Number.isFinite(part));
+  // OpenCode 2.x prints `opencode v2.3.2`; 1.x printed `1.19.5`; Cursor prints `2026.11.19-hash`.
+  const match = /\d+(?:\.\d+)+/.exec(version);
+  if (!match) {
+    return [];
+  }
+  return match[0].split('.').map((part) => Number(part));
 }
 
 function compareNumericParts(leftParts: number[], rightParts: number[]): number {
@@ -107,6 +107,9 @@ test('version comparison ignores cursor hash and compares semver cores', () => {
   expect(compareVersion('1.9.0', '1.19.5')).toBeLessThan(0);
   expect(compareVersion('1.19.4', '1.19.5')).toBeLessThan(0);
   expect(compareVersion('1.20.0', '1.19.5')).toBeGreaterThan(0);
+  expect(compareVersion('opencode v2.3.2', '1.19.5')).toBeGreaterThan(0);
+  expect(compareVersion('opencode v1.2.0', '1.19.5')).toBeLessThan(0);
+  expect(compareVersion('opencode v2.3.2', '2.3.2')).toBe(0);
 });
 
 function readOpenCodeCursorAcpProbe(): RawStepFixture {
@@ -438,5 +441,28 @@ describe('opencode via cursor-acp/ (Cursor models through OpenCode)', () => {
       cliVersion: '1.19.5',
     });
     expect(result.text).toBe('DONE');
+  });
+});
+
+describe('opencode 2.x', () => {
+  test('maps the real 2.x background-service error event to exit_nonzero with its message', () => {
+    const raw = readCase('opencode', 'service-error-2x');
+    const result = parseOpenCodeStepResult(raw);
+    expect(result.status).toBe('exit_nonzero');
+    expect(result.text).toBe('UnexpectedStatus: 500');
+    // The error event carries sessionID "" before a session exists; that is not a session id.
+    expect(result.sessionId).toBeUndefined();
+    expect(result.cost).toBe('cost_missing');
+  });
+
+  test('an error event with exit 0 is not ok', () => {
+    const result = parseOpenCodeStepResult({
+      stdout: '{"type":"error","sessionID":"","error":{"type":"unknown","message":"boom"}}\n',
+      stderr: '',
+      exitCode: 0,
+      cliVersion: 'opencode v2.3.2',
+    });
+    expect(result.status).not.toBe('ok');
+    expect(result.text).toBe('boom');
   });
 });

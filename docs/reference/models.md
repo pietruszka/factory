@@ -26,19 +26,19 @@ This page captures FAC-6 `[M0-5]` for home-level `config.yaml` `models:` default
 - reviewer and vision judge are same family
 - reviewer/vision judge family differs from planner/builder family
 - each configured CLI is in the usage-reporting allowlist (`cursor-agent`, `opencode`) based on [CLI facts (FAC-4)](/reference/cli-facts) row 2
-- each non-null CLI model ID exists in that CLI's model list (`agent models` parsing `id - name`; `opencode models` parsing one `provider/model` id per line)
+- each non-null CLI model ID exists in that CLI's model list (`agent models` parsing `id - name`; `opencode models` parsing one `provider/model` id per line). For OpenCode 2.x the list comes from the background service, never `--standalone`. Preflight runs it from the system temp folder, because the service cannot read `~/Documents`. It polls up to 10 times, 2 s apart, until the configured ids appear, because plugin models load a few seconds after the first request.
 - provider prefixes such as `cursor-acp/` are stripped before the family and fast checks, so `cursor-acp/gpt-5.3-codex-high-fast` is rejected and `cursor-acp/claude-…` derives `claude`
 
 When any check fails, preflight exits non-zero and prints each violation.
 
 ## OpenCode with Cursor models (`cursor-acp/`)
 
-OpenCode reaches the Cursor subscription through the `cursor-acp/` provider. Availability checked with `opencode models` on 2026-11-21:
+OpenCode reaches the Cursor subscription through the `cursor-acp/` provider. Availability checked with `opencode models` on 2026-11-21, on 1.19.5 and again on 2.3.2:
 
 | Role model | Via Cursor agent | Via OpenCode (`cursor-acp/`) |
 | --- | --- | --- |
-| `gpt-5.3-codex-high` (planner, builder) | yes | yes: `cursor-acp/gpt-5.3-codex-high` |
-| `claude-opus-5-5-high` (reviewer, vision judge) | yes | no: newest Opus via `cursor-acp/` is 4.7 |
+| `gpt-5.3-codex-high` (planner, builder) | yes | yes: `cursor-acp/gpt-5.3-codex-high` (1.19.5 and 2.3.2) |
+| `claude-opus-5-5-high` (reviewer, vision judge) | yes | 2.3.2: yes, `cursor-acp/claude-opus-5-5-high`; 1.19.5: no (newest Opus was 4.7) |
 
 The defaults above are unchanged. For `cursor-acp/` models OpenCode reports a real cost on `step_finish.part.cost`, so no price-table estimate is used for them (probe result on [CLI test run report](/reference/cli-test-run-report#opencode-via-cursor-acp)).
 

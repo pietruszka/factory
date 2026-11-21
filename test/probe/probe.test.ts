@@ -14,6 +14,13 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 import { createDevHome } from '../../src/dev/home.js';
 import { runProbe } from '../../src/probe/probe.js';
+import {
+  buildProbeRunnerSpecs,
+  FORBIDDEN_CLI_FLAGS,
+  isMacPrivacyProtectedPath,
+  runProbeCli,
+  type ProbeRunnerSpec,
+} from '../../src/probe/runners.js';
 import { renderReplayScript, type FakeCliReplay } from '../support/fake-cli.js';
 
 const tempDirs: string[] = [];
@@ -71,12 +78,17 @@ function buildAgentCliScript(input: {
 function buildOpenCodeCliScript(input: {
   version?: string;
   helpText?: string;
+  models?: string[];
   run?: FakeCliReplay;
   beforeRun?: string;
 }): string {
-  const helpText = input.helpText ?? 'opencode run --help supports run --format --model';
+  const helpText = input.helpText ?? 'opencode run --help supports run --format --model --agent --archived';
   return [
     'const args = process.argv.slice(2);',
+    "if (args[0] === 'models') {",
+    `  process.stdout.write(${JSON.stringify(`${(input.models ?? ['opencode/beam-free']).join('\n')}\n`)});`,
+    '  process.exit(0);',
+    '}',
     "if (args.includes('--version')) {",
     `  process.stdout.write(${JSON.stringify(`${input.version ?? '1.19.5'}\n`)});`,
     '  process.exit(0);',
@@ -1010,5 +1022,90 @@ fs.writeFileSync(path.join(process.env.PWD, 'opencode-pwd-marker.txt'), 'ok\\n',
     >;
     expect(agentFixture.budgetExceeded).toBe(true);
     expect(agentFixture.error).toContain('Budget exceeded');
+  });
+});
+
+describe('opencode 2.x probe runner', () => {
+  function fakeOpenCodeEnv(body: string): { env: NodeJS.ProcessEnv; userHome: string; markerDir: string } {
+    const userHome = makeTempDir('factory-user-home-');
+    const binDir = join(userHome, 'bin');
+    const markerDir = join(userHome, 'markers');
+    mkdirSync(binDir, { recursive: true });
+    mkdirSync(markerDir, { recursive: true });
+    writeFakeCli(binDir, 'opencode', body);
+    return { env: { HOME: userHome, PATH: pathWithFakeBinOnly(binDir, createNodeOnlyPathDir()) }, userHome, markerDir };
+  }
+
+  function openCodeSpec(cwd: string, overrides: Partial<ProbeRunnerSpec> = {}): ProbeRunnerSpec {
+    const base = buildProbeRunnerSpecs('/unused').find((spec) => spec.cli === 'opencode');
+    if (!base) {
+      throw new Error('missing opencode spec');
+    }
+    return { ...base, cwd, warmupDelayMs: 1, ...overrides };
+  }
+
+  test('opencode probe args are archived and read-only, and no spec ever passes --auto', () => {
+    const specs = buildProbeRunnerSpecs('/unused');
+    const opencode = specs.find((spec) => spec.cli === 'opencode');
+    expect(opencode?.args).toEqual(expect.arrayContaining(['--archived', '--agent', 'plan']));
+    expect(FORBIDDEN_CLI_FLAGS.opencode).toContain('--auto');
+    for (const spec of specs) {
+      expect(spec.args).not.toContain('--auto');
+    }
+  });
+
+  test('refuses a spec that passes --auto without spawning the CLI', () => {
+    const { env, userHome, markerDir } = fakeOpenCodeEnv(
+      `require('node:fs').writeFileSync(${JSON.stringify(join('MARKER_DIR', 'spawned'))}.replace('MARKER_DIR', process.env.MARKER_DIR), 'x');`,
+    );
+    const cwd = join(userHome, 'sandbox');
+    const spec = openCodeSpec(cwd);
+    const outcome = runProbeCli({ ...spec, args: [...spec.args.slice(0, -1), '--auto', spec.args[spec.args.length - 1]] }, {
+      ...env,
+      MARKER_DIR: markerDir,
+    });
+    expect(outcome.errorMessage).toMatch(/forbidden flag: --auto/);
+    expect(existsSync(join(markerDir, 'spawned'))).toBe(false);
+  });
+
+  test('refuses an opencode sandbox inside a macOS privacy-protected folder', () => {
+    const { env, userHome } = fakeOpenCodeEnv(buildOpenCodeCliScript({}));
+    expect(isMacPrivacyProtectedPath(join(userHome, 'Documents', 'x'), userHome)).toBe(true);
+    expect(isMacPrivacyProtectedPath(join(userHome, 'Desktop'), userHome)).toBe(true);
+    expect(isMacPrivacyProtectedPath(join(userHome, 'Downloads', 'a', 'b'), userHome)).toBe(true);
+    expect(isMacPrivacyProtectedPath(join(userHome, 'DocumentsArchive'), userHome)).toBe(false);
+    expect(isMacPrivacyProtectedPath(join(userHome, '.factory-dev', 'sandbox'), userHome)).toBe(false);
+    const outcome = runProbeCli(openCodeSpec(join(userHome, 'Documents', 'sandbox')), env);
+    expect(outcome.errorMessage).toMatch(/privacy-protected folder/);
+  });
+
+  test('waits until the background service lists the probe model before running', () => {
+    const { env, userHome, markerDir } = fakeOpenCodeEnv(
+      [
+        "const fs = require('node:fs');",
+        "const path = require('node:path');",
+        'const args = process.argv.slice(2);',
+        "const counter = path.join(process.env.MARKER_DIR, 'models-calls');",
+        "if (args[0] === 'models') {",
+        "  const calls = fs.existsSync(counter) ? Number(fs.readFileSync(counter, 'utf8')) + 1 : 1;",
+        '  fs.writeFileSync(counter, String(calls));',
+        "  process.stdout.write(calls < 3 ? 'cursor-acp/composer-2.5\\n' : 'cursor-acp/composer-2.5\\nopencode/beam-free\\n');",
+        '  process.exit(0);',
+        '}',
+        "if (args.includes('--version')) { process.stdout.write('opencode v2.3.2\\n'); process.exit(0); }",
+        "if (args.includes('--help')) { process.stdout.write('run --format --model --agent --archived\\n'); process.exit(0); }",
+        "process.stdout.write(JSON.stringify({ type: 'step_finish', sessionID: 'ses_x', part: { cost: 0 } }) + '\\n');",
+      ].join('\n'),
+    );
+    const outcome = runProbeCli(openCodeSpec(join(userHome, 'sandbox')), { ...env, MARKER_DIR: markerDir });
+    expect(outcome.errorMessage).toBeUndefined();
+    expect(outcome.exitCode).toBe(0);
+    expect(readFileSync(join(markerDir, 'models-calls'), 'utf8')).toBe('3');
+  });
+
+  test('fails clearly when the probe model never appears in opencode models', () => {
+    const { env, userHome } = fakeOpenCodeEnv(buildOpenCodeCliScript({ models: ['cursor-acp/composer-2.5'] }));
+    const outcome = runProbeCli(openCodeSpec(join(userHome, 'sandbox'), { warmupAttempts: 2 }), env);
+    expect(outcome.errorMessage).toMatch(/not listed by `opencode models`/);
   });
 });
