@@ -1,4 +1,5 @@
 import {
+  existsSync,
   chmodSync,
   mkdtempSync,
   mkdirSync,
@@ -747,7 +748,9 @@ if (process.env.XDG_CONFIG_HOME || process.env.XDG_DATA_HOME || process.env.XDG_
   process.exit(9);
 }
 fs.writeFileSync(path.join(process.env.HOME, 'opencode-home-marker.txt'), 'ok\\n', 'utf8');
-fs.writeFileSync(path.join(process.cwd(), 'opencode-cwd-marker.txt'), 'ok\\n', 'utf8');`,
+fs.writeFileSync(path.join(process.cwd(), 'opencode-cwd-marker.txt'), 'ok\\n', 'utf8');
+// The cursor-acp/ bridge resolves relative tool paths against PWD, so PWD must match the sandbox cwd.
+fs.writeFileSync(path.join(process.env.PWD, 'opencode-pwd-marker.txt'), 'ok\\n', 'utf8');`,
         run: {
           stdoutLines: [JSON.stringify({ usage: { outputTokens: 2 }, cost: 0.01 })],
         },
@@ -765,6 +768,7 @@ fs.writeFileSync(path.join(process.cwd(), 'opencode-cwd-marker.txt'), 'ok\\n', '
         XDG_CACHE_HOME: '/tmp/not-allowed-cache',
         OPENCODE_TOKEN: 'secret-opencode-token',
         OPENCODE_SERVER_PASSWORD: 'secret-opencode-password',
+        PWD: repoRoot,
         PATH: pathWithFakeBinOnly(binDir, nodeOnlyDir),
       },
       repoRoot,
@@ -778,6 +782,8 @@ fs.writeFileSync(path.join(process.cwd(), 'opencode-cwd-marker.txt'), 'ok\\n', '
     ).toContain('ok');
     expect(readFileSync(join(factoryHome, 'sandbox', 'probe-cursor-agent', 'agent-cwd-marker.txt'), 'utf8')).toContain('ok');
     expect(readFileSync(join(factoryHome, 'sandbox', 'probe-opencode', 'opencode-cwd-marker.txt'), 'utf8')).toContain('ok');
+    expect(readFileSync(join(factoryHome, 'sandbox', 'probe-opencode', 'opencode-pwd-marker.txt'), 'utf8')).toContain('ok');
+    expect(existsSync(join(repoRoot, 'opencode-pwd-marker.txt'))).toBe(false);
   });
 
   test('extracts usage from exact usage/tokens objects and avoids descending after cost key match', () => {

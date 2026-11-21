@@ -94,7 +94,10 @@ export function parseOpenCodeStepResult(input: unknown, modelId?: string): StepR
   const baseStatus = statusFromExit(raw);
   let status: StepResult['status'] = baseStatus;
   let usage: unknown;
+  // Text is tracked per step: multi-step runs (e.g. cursor-acp/ tool calls) emit tool-call JSON as
+  // text in earlier steps, so the result text is the last step that produced any text.
   let text = '';
+  let stepText = '';
   let sessionId: string | undefined;
   let cost: number | 'cost_missing' = 'cost_missing';
   let sawStepFinish = false;
@@ -132,8 +135,12 @@ export function parseOpenCodeStepResult(input: unknown, modelId?: string): StepR
       if (typeof event.part.sessionID === 'string') {
         sessionId = event.part.sessionID;
       }
+      if (event.type === 'step_start') {
+        stepText = '';
+      }
       if (event.type === 'text' && typeof event.part.text === 'string') {
-        text += event.part.text;
+        stepText += event.part.text;
+        text = stepText;
       }
       if (event.type === 'step_finish') {
         sawStepFinish = true;

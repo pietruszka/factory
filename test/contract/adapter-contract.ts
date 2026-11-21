@@ -109,8 +109,14 @@ test('version comparison ignores cursor hash and compares semver cores', () => {
   expect(compareVersion('1.20.0', '1.19.5')).toBeGreaterThan(0);
 });
 
+function readOpenCodeCursorAcpProbe(): RawStepFixture {
+  const path = join(process.cwd(), 'test', 'fixtures', 'cli', 'opencode', 'probe-cursor-acp.json');
+  return toRawStepInput(readJsonFile<ProbeFixture>(path));
+}
+
 test('all checked-in probe and case fixtures are fresh for each CLI', () => {
   const clis: CliName[] = ['cursor-agent', 'opencode'];
+  assertFixtureFresh(readOpenCodeCursorAcpProbe(), 'opencode');
   for (const cli of clis) {
     assertFixtureFresh(readProbe(cli), cli);
     for (const caseName of readAllCaseNames(cli)) {
@@ -401,5 +407,36 @@ describe.each([
       cliVersion: '0.0.0',
     };
     expect(() => assertFixtureFresh(stale, cli)).toThrow(/stale fixture/i);
+  });
+});
+
+describe('opencode via cursor-acp/ (Cursor models through OpenCode)', () => {
+  test('parses the real cursor-acp/gpt-5.4-nano-none probe with exact values', () => {
+    const raw = readOpenCodeCursorAcpProbe();
+    const result = parseOpenCodeStepResult(raw, 'cursor-acp/gpt-5.4-nano-none');
+    expect(result.status).toBe('ok');
+    // Final answer is the last step's text, not the tool-call JSON the bridge emitted in earlier steps.
+    expect(result.text).toBe('PROBE_OK');
+    expect(result.sessionId).toBe('ses_e02c36948ffea7GVTfW1kAnece');
+    // OpenCode reports a real (non-zero) cost for Cursor-backed models; it is not estimated.
+    expect(result.cost).toBe(0.00490775);
+    expect(result.estimated).toBeUndefined();
+    expect(result.usage).toEqual({ input: 24495, output: 7, reasoning: 0, cache: { read: 0, write: 0 } });
+  });
+
+  test('keeps text from the last step that produced text', () => {
+    const step = (text: string, reason: string) =>
+      [
+        '{"type":"step_start","sessionID":"ses_x","part":{"type":"step-start"}}',
+        `{"type":"text","sessionID":"ses_x","part":{"type":"text","text":${JSON.stringify(text)}}}`,
+        `{"type":"step_finish","sessionID":"ses_x","part":{"type":"step-finish","reason":"${reason}","cost":0}}`,
+      ].join('\n');
+    const result = parseOpenCodeStepResult({
+      stdout: `${step('{"name":"write"}', 'tool-calls')}\n${step('DONE', 'stop')}\n`,
+      stderr: '',
+      exitCode: 0,
+      cliVersion: '1.19.5',
+    });
+    expect(result.text).toBe('DONE');
   });
 });

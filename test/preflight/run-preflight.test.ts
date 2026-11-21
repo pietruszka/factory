@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -71,6 +71,39 @@ describe('runPreflight', () => {
       PATH: '/bin',
     });
     await expect(run).rejects.toThrow(/set -o pipefail; agent models \| cat/);
+    await expect(run).rejects.toThrow(/not found|command not found/);
+  });
+
+  test('looks up opencode models with a pipefail command when a role uses opencode', async () => {
+    const factoryHome = mkdtempSync(join(tmpdir(), 'factory-preflight-'));
+    const models = {
+      ...DEFAULT_MODELS,
+      builder: { cli: 'opencode', model: 'cursor-acp/gpt-5.3-codex-high', family: 'gpt' },
+    };
+    writeFileSync(join(factoryHome, 'config.yaml'), `${renderModelsSectionYaml(models)}\n`, 'utf8');
+    writeFileSync(join(factoryHome, DEV_HOME_MARKER), 'test marker\n', 'utf8');
+
+    const fakeBin = mkdtempSync(join(tmpdir(), 'factory-fake-bin-'));
+    const agentPath = join(fakeBin, 'agent');
+    writeFileSync(
+      agentPath,
+      [
+        '#!/bin/sh',
+        'echo "Available models:"',
+        'echo "gpt-5.3-codex-high - GPT 5.3 Codex High"',
+        'echo "claude-opus-5-5-high - Claude Opus 5.5"',
+        'echo "Tip: Use --model <id> to select a model"',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    chmodSync(agentPath, 0o755);
+
+    const run = runPreflight({
+      FACTORY_HOME: factoryHome,
+      PATH: `${fakeBin}:/bin`,
+    });
+    await expect(run).rejects.toThrow(/set -o pipefail; opencode models \| cat/);
     await expect(run).rejects.toThrow(/not found|command not found/);
   });
 });

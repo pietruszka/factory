@@ -163,7 +163,9 @@ export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): Prob
   const startedAt = Date.now();
   const result = spawnSync(spec.command, spec.args, {
     cwd: spec.cwd,
-    env,
+    // OpenCode's cursor-acp/ bridge resolves relative tool paths against PWD, not the process cwd.
+    // Without this, a probe started from the repo wrote into the repo instead of the sandbox.
+    env: { ...env, PWD: spec.cwd },
     encoding: 'utf8',
     timeout: spec.timeoutMs,
     maxBuffer: TEN_MB,

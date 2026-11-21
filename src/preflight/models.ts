@@ -155,16 +155,24 @@ export function readModelsConfigFromYaml(contents: string): HomeModelsConfig {
   return parsedConfig.data.models;
 }
 
+/**
+ * Removes OpenCode-style provider segments, e.g. `cursor-acp/gpt-5.3-codex-high` -> `gpt-5.3-codex-high`.
+ * Family and fast checks run on the stripped id so a provider name can never hide or fake a match.
+ */
+export function stripProviderPrefix(model: string): string {
+  return model.includes('/') ? (model.split('/').pop() ?? model) : model;
+}
+
 function hasHighFastVariant(model: string): boolean {
-  return /-high-fast/i.test(model);
+  return /-high-fast/i.test(stripProviderPrefix(model));
 }
 
 function hasFastSuffix(model: string): boolean {
-  return /-fast$|fast=true/i.test(model);
+  return /-fast$|fast=true/i.test(stripProviderPrefix(model));
 }
 
 function normalizeModelIdForFamily(model: string): string {
-  const withoutProviderPrefix = model.includes('/') ? (model.split('/').pop() ?? model) : model;
+  const withoutProviderPrefix = stripProviderPrefix(model);
   const withoutOverrides = withoutProviderPrefix.split('[')[0] ?? withoutProviderPrefix;
   return withoutOverrides.toLowerCase();
 }
@@ -394,9 +402,20 @@ export function parseAgentModelsOutput(output: string): string[] {
     .filter((id): id is string => Boolean(id));
 }
 
+/** Parses `opencode models`: one `provider/model` id per line, e.g. `cursor-acp/gpt-5.3-codex-high`. */
+export function parseOpenCodeModelsOutput(output: string): string[] {
+  return output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._\-\[\]=,]+)+$/.test(line));
+}
+
 function commandForCli(cli: string): string {
   if (cli === 'cursor-agent') {
     return 'set -o pipefail; agent models | cat';
+  }
+  if (cli === 'opencode') {
+    return 'set -o pipefail; opencode models | cat';
   }
   throw new Error(`Unsupported CLI for model list lookup: ${cli}`);
 }
@@ -421,7 +440,10 @@ function loadModelCatalogFromCli(clis: string[], env: NodeJS.ProcessEnv): ModelC
     }
     let parsed: string[];
     try {
-      parsed = parseAgentModelsOutput(result.stdout ?? '');
+      parsed =
+        cli === 'opencode'
+          ? parseOpenCodeModelsOutput(result.stdout ?? '')
+          : parseAgentModelsOutput(result.stdout ?? '');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`${message}${stderrSuffix}`);

@@ -3,6 +3,8 @@ import { describe, expect, test } from 'vitest';
 import {
   checkModelsPreflight,
   parseAgentModelsOutput,
+  parseOpenCodeModelsOutput,
+  stripProviderPrefix,
   type HomeModelsConfig,
   type ModelCatalogByCli,
 } from '../../src/preflight/models.js';
@@ -399,5 +401,126 @@ describe('parseAgentModelsOutput', () => {
     );
 
     expect(parsed).toEqual(['gpt-5.3-codex-high']);
+  });
+});
+
+describe('provider-prefixed model ids (OpenCode cursor-acp/)', () => {
+  const acpCatalog = makeCatalog({
+    opencode: [
+      'cursor-acp/gpt-5.3-codex-high',
+      'cursor-acp/gpt-5.3-codex-high-fast',
+      'cursor-acp/gpt-5.3-codex-fast',
+      'cursor-acp/claude-opus-4-7-high',
+    ],
+  });
+
+  test('stripProviderPrefix removes one or more provider segments', () => {
+    expect(stripProviderPrefix('cursor-acp/gpt-5.3-codex-high')).toBe('gpt-5.3-codex-high');
+    expect(stripProviderPrefix('a/b/claude-opus-4-7-high')).toBe('claude-opus-4-7-high');
+    expect(stripProviderPrefix('gpt-5.3-codex-high')).toBe('gpt-5.3-codex-high');
+  });
+
+  test('passes when builder and planner run cursor-acp/gpt via opencode', () => {
+    const result = checkModelsPreflight(
+      makeConfig({
+        planner: { cli: 'opencode', model: 'cursor-acp/gpt-5.3-codex-high', family: 'gpt' },
+        builder: { cli: 'opencode', model: 'cursor-acp/gpt-5.3-codex-high', family: 'gpt' },
+      }),
+      acpCatalog,
+    );
+    expect(result).toEqual([]);
+  });
+
+  test('rejects cursor-acp/...-high-fast', () => {
+    const result = checkModelsPreflight(
+      makeConfig({
+        builder: { cli: 'opencode', model: 'cursor-acp/gpt-5.3-codex-high-fast', family: 'gpt' },
+      }),
+      acpCatalog,
+    );
+    expect(result).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'high_fast_model', role: 'builder' })]),
+    );
+  });
+
+  test('rejects cursor-acp/...-fast', () => {
+    const result = checkModelsPreflight(
+      makeConfig({
+        planner: { cli: 'opencode', model: 'cursor-acp/gpt-5.3-codex-fast', family: 'gpt' },
+      }),
+      acpCatalog,
+    );
+    expect(result).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'fast_model', role: 'planner' })]),
+    );
+  });
+
+  test('derives claude from cursor-acp/claude-... and flags a wrong family label', () => {
+    const result = checkModelsPreflight(
+      makeConfig({
+        reviewer: { cli: 'opencode', model: 'cursor-acp/claude-opus-4-7-high', family: 'gpt' },
+      }),
+      acpCatalog,
+    );
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'family_label_mismatch', role: 'reviewer' }),
+      ]),
+    );
+    expect(result).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'same_family_conflict' })]),
+    );
+  });
+
+  test('rejects a cursor-acp/gpt reviewer as the same family as a gpt builder', () => {
+    const result = checkModelsPreflight(
+      makeConfig({
+        reviewer: { cli: 'opencode', model: 'cursor-acp/gpt-5.3-codex-high', family: 'gpt' },
+      }),
+      acpCatalog,
+    );
+    expect(result).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'same_family_conflict', role: 'reviewer' })]),
+    );
+  });
+
+  test('a cursor-acp/claude reviewer via opencode passes when the CLI lists it', () => {
+    const result = checkModelsPreflight(
+      makeConfig({
+        reviewer: { cli: 'opencode', model: 'cursor-acp/claude-opus-4-7-high', family: 'claude' },
+      }),
+      acpCatalog,
+    );
+    expect(result).toEqual([]);
+  });
+
+  test('Opus 5.5 is not accepted through opencode when the cursor-acp list lacks it', () => {
+    const result = checkModelsPreflight(
+      makeConfig({
+        reviewer: { cli: 'opencode', model: 'cursor-acp/claude-opus-5-5-high', family: 'claude' },
+      }),
+      acpCatalog,
+    );
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'model_not_accepted_by_cli', role: 'reviewer', cli: 'opencode' }),
+      ]),
+    );
+  });
+});
+
+describe('parseOpenCodeModelsOutput', () => {
+  test('extracts provider/model ids one per line', () => {
+    const parsed = parseOpenCodeModelsOutput(
+      ['opencode/beam-free', 'cursor-acp/gpt-5.3-codex-high', 'cursor-acp/gpt-5.4-nano-none', ''].join('\n'),
+    );
+    expect(parsed).toEqual(['opencode/beam-free', 'cursor-acp/gpt-5.3-codex-high', 'cursor-acp/gpt-5.4-nano-none']);
+  });
+
+  test('ignores lines that are not provider/model ids', () => {
+    const parsed = parseOpenCodeModelsOutput(
+      ['Warning: something - retrying', 'cursor-acp/claude-opus-4-7-high', 'not an id'].join('\n'),
+    );
+    expect(parsed).toEqual(['cursor-acp/claude-opus-4-7-high']);
   });
 });

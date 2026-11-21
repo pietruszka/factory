@@ -10,7 +10,7 @@ It pulls together what FAC-3 to FAC-7 recorded for the two CLIs in scope:
 Cursor agent (`agent`) and OpenCode (`opencode`).
 Copilot CLI is not part of M0. Its items are listed at the end and handed to the Copilot CLI follow-up.
 
-Status: **awaiting the owner's review.** M0 is not marked done until that review.
+Status: **reviewed and merged; M0 is done.** Corrected after merge: OpenCode reaches Cursor's models through the `cursor-acp/` provider (see [OpenCode via `cursor-acp/`](#opencode-via-cursor-acp)).
 
 ## Summary
 
@@ -19,7 +19,7 @@ Status: **awaiting the owner's review.** M0 is not marked done until that review
 | Pinned version | `2026.11.19-f005e9d` | `1.19.5` |
 | Structured output | `--output-format json`: one final result object (`stream-json` also exists) | `--format json`: newline-delimited events `step_start`, `text`, `step_finish` |
 | Usage fields | `inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens` | `tokens.total`, `input`, `output`, `reasoning`, `cache.read`, `cache.write` |
-| Cost field | none: cost is not reported by the CLI | `step_finish.part.cost` |
+| Cost field | none: cost is not reported by the CLI | `step_finish.part.cost` (real USD for `cursor-acp/` models, `0` for free models) |
 | Usage timing (NFR-13) | end of call only (terminal result) | end of step only (`step_finish`) |
 | Version flag (NFR-43) | `--version` | `--version` |
 | Headless session resume | yes: `--resume <session_id>` keeps the same id | yes: `--session <sessionID>` keeps the same id |
@@ -28,8 +28,9 @@ Status: **awaiting the owner's review.** M0 is not marked done until that review
 | Image input (D-6) | **still open**, workaround recorded | yes: `--file` with an image-capable model |
 | "high fast" variants (NFR-45) | ids ending `-high-fast` in `agent models` | ids containing `-high-fast` in `opencode models` |
 | Global skills | **still open**, workaround recorded | loaded from `~/.agents/skills/<name>/SKILL.md` (`opencode debug skill`) |
-| L2 contract suite | 19 of 19 passed | 19 of 19 passed |
-| Live spend | not reported by the CLI; a one-line probe on a nano model, far below $1 | $0 (reported by the CLI) |
+| Models | `agent models` (Cursor subscription) | free `opencode/*` models plus 174 Cursor models via the `cursor-acp/` provider |
+| L2 contract suite | 19 of 19 passed | 19 of 19 passed, plus 2 `cursor-acp/` cases |
+| Live spend | not reported by the CLI; a one-line probe on a nano model, far below $1 | $0.0049 reported by the CLI ($0 free-model runs plus one `cursor-acp/` probe) |
 
 Full evidence for each fact (commands, docs and fixture fields) is on [CLI facts (FAC-4)](/reference/cli-facts).
 
@@ -55,6 +56,21 @@ Full evidence for each fact (commands, docs and fixture fields) is on [CLI facts
 - **FR-14 invocation:** `opencode run --command "<cmd>" "<args...>"`.
 - **Global skills:** `opencode debug skill` lists skills from `~/.agents/skills/<name>/SKILL.md` (checked locally on 21 Nov 2026, no model call).
 
+### OpenCode via `cursor-acp/`
+
+The owner's OpenCode loads the `cursor-acp` plugin, which exposes the Cursor subscription as a provider. `opencode models` lists 174 `cursor-acp/` ids (checked 21 Nov 2026, no model call).
+
+- **Builder and planner model: available.** `cursor-acp/gpt-5.3-codex-high` is listed, so OpenCode can plan or build on the same model as Cursor agent.
+- **Reviewer model: not available.** There is no `cursor-acp/claude-opus-5-5-high`; the newest Opus through `cursor-acp/` is 4.7. The reviewer stays on Cursor agent (D-37).
+- **Fast variants come through too** (for example `cursor-acp/gpt-5.3-codex-high-fast`). Preflight strips the provider prefix before the family and fast checks, so these are rejected.
+- **Probe, 21 Nov 2026** (`opencode run --format json --model cursor-acp/gpt-5.4-nano-none "Reply with exactly: PROBE_OK"`, sandbox cwd, redacted fixture `test/fixtures/cli/opencode/probe-cursor-acp.json`):
+  - succeeded, exit 0, final text `PROBE_OK`, about 33 s;
+  - same NDJSON event types as free models, but **4 steps**: the bridge first emitted three `write` tool calls (`text` with tool-call JSON, then `tool_use`, then `step_finish` with reason `tool-calls` and zero tokens), then a final step with the answer;
+  - tokens are reported only on the final `step_finish` (24,495 input, 7 output, no cache);
+  - **cost is reported by the CLI** as a real number: `0.00490775` USD, so no price-table estimate is needed for `cursor-acp/` models;
+  - `sessionID` is present on every event; resume was not re-tested on `cursor-acp/` (it uses the same `--session` flag as the free-model check).
+- **Two adapter consequences**, both fixed in the follow-up PR: the result text is now the last step's text (not the tool-call JSON of earlier steps), and the probe sets `PWD` to the sandbox, because the bridge resolved the relative tool path against the inherited `PWD` and wrote a file into the directory the probe was started from (removed after the run).
+
 ### Still open, with workarounds
 
 | Item | CLI | Status | Workaround |
@@ -62,7 +78,8 @@ Full evidence for each fact (commands, docs and fixture fields) is on [CLI facts
 | Telemetry opt-out (NFR-27) | Cursor agent | Still open: no telemetry flag in `agent --help` and none found in the CLI docs | Keep the default config and control outbound traffic outside the CLI (proxy or network policy) until a documented switch exists |
 | Headless image input (D-6) | Cursor agent | Still open: no attach, file or image flag in `agent --help` | Vision judge CLI stays `null` in the model config (see [Model IDs by role](/reference/models)); OpenCode's `--file` is the known working path when an image-capable model is available |
 | Read-only flag | OpenCode | No `--read-only` flag in `opencode run --help` | Disable write tools in config (`"tools": { "write": false, "bash": false }`) and/or set a permission policy with `OPENCODE_PERMISSION`; the pipeline's write-scope diff check still applies |
-| Paid models | OpenCode | `opencode auth list` shows 0 credentials, so only free models (for example `opencode/beam-free`) can run | Use OpenCode with free models for tests; add a provider credential before using it for paid roles |
+| Paid models | OpenCode | **Closed (corrected):** `opencode auth list` shows 0 provider credentials, but the `cursor-acp` plugin gives OpenCode the Cursor subscription models (`cursor-acp/…`, 174 ids). A live `cursor-acp/gpt-5.4-nano-none` probe succeeded and reported cost | Use `cursor-acp/` ids for paid roles; Opus 5.5 is not listed there, so the reviewer stays on Cursor agent |
+| Tool side effects outside the sandbox | OpenCode via `cursor-acp/` | The bridge may call write tools even on a one-line prompt, resolving paths against `PWD` | Always set `PWD` to the sandbox cwd (done in the probe runner); the pipeline's write-scope diff check still applies |
 | Global skill loading | Cursor agent | Not checked: `agent` has no command that lists loaded skills, and checking it needs a model call | The factory command is the entry point either way; confirm the Cursor path when the front-door skill is built (FR-28) |
 
 ## 2. L2 contract suite (M0-4, FAC-5)
@@ -71,8 +88,8 @@ Command: `npm test` (Vitest, no live CLI calls; a network guard blocks in-proces
 
 | Scope | Result |
 | --- | --- |
-| Whole repo | 12 test files, 121 tests, all passed |
-| Adapter contract suite (`test/contract/adapter-contract.test.ts`) | 38 tests, all passed: 19 for `cursor-agent`, 19 for `opencode` |
+| Whole repo | 12 test files, 121 tests, all passed at M0 sign-off (134 after the `cursor-acp/` follow-up) |
+| Adapter contract suite (`test/contract/adapter-contract.test.ts`) | 38 shared tests, all passed: 19 for `cursor-agent`, 19 for `opencode`; plus 2 `cursor-acp/` cases added after M0 |
 
 Each CLI runs the same shared cases, including the real probe fixture, success, malformed JSON, missing cost (`cost_missing`), timeout, non-zero exit, empty output, session id present and absent, and the stale-fixture guard against the versions pinned in `test/fixtures/cli/pins.json`.
 Derived fixtures: 7 per CLI under `test/fixtures/cli/<cli>/cases/`.
@@ -88,7 +105,7 @@ Source: `src/config/models.ts` (`DEFAULT_MODELS`) and [Model IDs by role](/refer
 | reviewer | `cursor-agent` | `claude-opus-5-5-high` | claude | Temporary per D-37 until the Copilot CLI follow-up passes |
 | visionJudge | `null` | `claude-opus-5-5-high` | claude | No CLI yet: Cursor agent has no headless image input |
 
-`npm run preflight` checks that the roles exist, that no id is a fast variant, that the families are split correctly, and that every configured id is in `agent models`. It passed against the real model list in FAC-6.
+`npm run preflight` checks that the roles exist, that no id is a fast variant, that the families are split correctly, and that every configured id is in that CLI's list (`agent models`, or `opencode models` for `cursor-acp/` ids). It passed against the real model list in FAC-6.
 
 Prices: `claude-opus-5-5-high` has a price from [cursor.com/docs/models](https://cursor.com/docs/models). `gpt-5.3-codex-high` has no published price there, so planner and builder costs stay `cost_missing` until a price is found or those roles move to a priced model.
 
@@ -112,10 +129,11 @@ Read from `test/fixtures/cli/cursor-agent/probe.json`, `test/fixtures/cli/openco
 | FAC-3 probe, 20 Nov 2026 | OpenCode, `opencode/beam-free` | `0` |
 | FAC-4 fact checks (2 per CLI: one call and one resume, listed on [CLI facts](/reference/cli-facts)) | Same models as the probe | Cursor: not reported; OpenCode: `0` |
 | FAC-6 preflight | `agent models` (lists models, no model call) | Nothing to spend |
+| `cursor-acp/` probe, 21 Nov 2026 (`Reply with exactly: PROBE_OK`) | OpenCode, `cursor-acp/gpt-5.4-nano-none` | `0.00490775` (reported by the CLI); 24,495 input and 7 output tokens |
 
 `summary.json`: `totalReportedCostUsd: 0`, with `cursor-agent` listed as unknown.
 
-**Total live spend:** OpenCode $0. Cursor agent: not reported by the CLI; one-line prompts on a nano model, far below $1. Every run stayed at or below the $1 cap (D-30). No dollar figure is estimated for Cursor here, because the nano model has no price in the price table.
+**Total live spend:** OpenCode $0.0049 (all from the `cursor-acp/` probe; free-model runs were $0). Cursor agent: not reported by the CLI; one-line prompts on a nano model, far below $1. Every run stayed at or below the $1 cap (D-30). No dollar figure is estimated for Cursor here, because the nano model has no price in the price table.
 
 ## 6. Handed to the Copilot CLI follow-up
 
