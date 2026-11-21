@@ -51,12 +51,12 @@ function readProbe(cli: CliName): RawStepFixture {
 }
 
 function parseNumericCore(version: string): number[] {
-  return version
-    .replace(/^v/i, '')
-    .split('-')[0]
-    .split('.')
-    .map((part) => Number(part))
-    .filter((part) => Number.isFinite(part));
+  // OpenCode 2.x prints `opencode v2.3.2`; 1.x printed `1.19.5`; Cursor prints `2026.11.19-hash`.
+  const match = /\d+(?:\.\d+)+/.exec(version);
+  if (!match) {
+    return [];
+  }
+  return match[0].split('.').map((part) => Number(part));
 }
 
 function compareNumericParts(leftParts: number[], rightParts: number[]): number {
@@ -107,6 +107,23 @@ test('version comparison ignores cursor hash and compares semver cores', () => {
   expect(compareVersion('1.9.0', '1.19.5')).toBeLessThan(0);
   expect(compareVersion('1.19.4', '1.19.5')).toBeLessThan(0);
   expect(compareVersion('1.20.0', '1.19.5')).toBeGreaterThan(0);
+  expect(compareVersion('opencode v2.3.2', '1.19.5')).toBeGreaterThan(0);
+  expect(compareVersion('opencode v1.2.0', '1.19.5')).toBeLessThan(0);
+  expect(compareVersion('opencode v2.3.2', '2.3.2')).toBe(0);
+});
+
+/**
+ * Historical OpenCode 1.19.5 recordings (M0 and the first cursor-acp/ probe). They are kept as
+ * parser regressions and evidence for the docs, and are not subject to the 2.x pin.
+ */
+function readOpenCodeV1Probe(name: 'probe' | 'probe-cursor-acp'): RawStepFixture {
+  const path = join(process.cwd(), 'test', 'fixtures', 'cli', 'opencode', 'v1', `${name}.json`);
+  return toRawStepInput(readJsonFile<ProbeFixture>(path));
+}
+
+test('opencode is pinned to 2.3.2', () => {
+  const pins = readJsonFile<PinsFixture>(join(process.cwd(), 'test', 'fixtures', 'cli', 'pins.json'));
+  expect(pins.opencode).toBe('2.3.2');
 });
 
 test('all checked-in probe and case fixtures are fresh for each CLI', () => {
@@ -133,9 +150,12 @@ describe.each([
       expect(result.sessionId).toBe('2e6ed06f-69f9-4a5e-a3ec-64fd96b09ae7');
       expect(result.cost).toBe('cost_missing');
     } else {
+      // OpenCode 2.3.2, cursor-acp/gpt-5.4-nano-none, --agent plan, 21 Nov 2026.
       expect(result.text).toBe('PROBE_OK');
-      expect(result.sessionId).toBe('ses_e04ec1ddbffeQqQ7qqbtvXp8nH');
-      expect(result.cost).toBe(0);
+      expect(result.sessionId).toBe('ses_e027441a4ffetvodRfyyc56W2H');
+      expect(result.cost).toBe(0.00429235);
+      // 2.x step_finish tokens have no `total`.
+      expect(result.usage).toEqual({ input: 21418, output: 7, reasoning: 0, cache: { read: 0, write: 0 } });
     }
     expect(result.cliVersion).toBe(raw.cliVersion);
   });
@@ -401,5 +421,67 @@ describe.each([
       cliVersion: '0.0.0',
     };
     expect(() => assertFixtureFresh(stale, cli)).toThrow(/stale fixture/i);
+  });
+});
+
+describe('opencode via cursor-acp/ (Cursor models through OpenCode)', () => {
+  test('still parses the historical 1.19.5 free-model probe', () => {
+    const result = parseOpenCodeStepResult(readOpenCodeV1Probe('probe'));
+    expect(result.status).toBe('ok');
+    expect(result.text).toBe('PROBE_OK');
+    expect(result.sessionId).toBe('ses_e04ec1ddbffeQqQ7qqbtvXp8nH');
+    expect(result.cost).toBe(0);
+  });
+
+  test('parses the historical 1.19.5 cursor-acp/gpt-5.4-nano-none probe with exact values', () => {
+    const raw = readOpenCodeV1Probe('probe-cursor-acp');
+    const result = parseOpenCodeStepResult(raw, 'cursor-acp/gpt-5.4-nano-none');
+    expect(result.status).toBe('ok');
+    // Final answer is the last step's text, not the tool-call JSON the bridge emitted in earlier steps.
+    expect(result.text).toBe('PROBE_OK');
+    expect(result.sessionId).toBe('ses_e02c36948ffea7GVTfW1kAnece');
+    // OpenCode reports a real (non-zero) cost for Cursor-backed models; it is not estimated.
+    expect(result.cost).toBe(0.00490775);
+    expect(result.estimated).toBeUndefined();
+    expect(result.usage).toEqual({ input: 24495, output: 7, reasoning: 0, cache: { read: 0, write: 0 } });
+  });
+
+  test('keeps text from the last step that produced text', () => {
+    const step = (text: string, reason: string) =>
+      [
+        '{"type":"step_start","sessionID":"ses_x","part":{"type":"step-start"}}',
+        `{"type":"text","sessionID":"ses_x","part":{"type":"text","text":${JSON.stringify(text)}}}`,
+        `{"type":"step_finish","sessionID":"ses_x","part":{"type":"step-finish","reason":"${reason}","cost":0}}`,
+      ].join('\n');
+    const result = parseOpenCodeStepResult({
+      stdout: `${step('{"name":"write"}', 'tool-calls')}\n${step('DONE', 'stop')}\n`,
+      stderr: '',
+      exitCode: 0,
+      cliVersion: '1.19.5',
+    });
+    expect(result.text).toBe('DONE');
+  });
+});
+
+describe('opencode 2.x', () => {
+  test('maps the real 2.x background-service error event to exit_nonzero with its message', () => {
+    const raw = readCase('opencode', 'service-error-2x');
+    const result = parseOpenCodeStepResult(raw);
+    expect(result.status).toBe('exit_nonzero');
+    expect(result.text).toBe('UnexpectedStatus: 500');
+    // The error event carries sessionID "" before a session exists; that is not a session id.
+    expect(result.sessionId).toBeUndefined();
+    expect(result.cost).toBe('cost_missing');
+  });
+
+  test('an error event with exit 0 is not ok', () => {
+    const result = parseOpenCodeStepResult({
+      stdout: '{"type":"error","sessionID":"","error":{"type":"unknown","message":"boom"}}\n',
+      stderr: '',
+      exitCode: 0,
+      cliVersion: 'opencode v2.3.2',
+    });
+    expect(result.status).not.toBe('ok');
+    expect(result.text).toBe('boom');
   });
 });

@@ -1,0 +1,10 @@
+{
+  "derivedFrom": "live opencode v2.3.2 probe on 21 Nov 2026 (recorded as-is): background service returned HTTP 500 because the run directory was in a macOS privacy-protected folder",
+  "raw": {
+    "stdout": "{\"type\":\"error\",\"timestamp\":1795251733328,\"sessionID\":\"\",\"error\":{\"type\":\"unknown\",\"message\":\"UnexpectedStatus: 500\"}}\n",
+    "stderr": "",
+    "exitCode": 1,
+    "timedOut": false,
+    "cliVersion": "opencode v2.3.2"
+  }
+}

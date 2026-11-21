@@ -1,10 +1,10 @@
 {
-  "derivedFrom": "../probe.json",
+  "derivedFrom": "../probe.json (re-derived for 2.3.2: same step_start/text/step_finish shape; 2.x tokens have no total)",
   "raw": {
     "stdout": "{\"type\":\"text\",\"part\":{\"type\":\"text\",\"text\":\"FAILED\"}}\n",
     "stderr": "command failed\n",
     "exitCode": 1,
     "timedOut": false,
-    "cliVersion": "1.19.5"
+    "cliVersion": "opencode v2.3.2"
   }
 }

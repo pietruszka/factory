@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { z } from 'zod';
@@ -155,16 +156,24 @@ export function readModelsConfigFromYaml(contents: string): HomeModelsConfig {
   return parsedConfig.data.models;
 }
 
+/**
+ * Removes OpenCode-style provider segments, e.g. `cursor-acp/gpt-5.3-codex-high` -> `gpt-5.3-codex-high`.
+ * Family and fast checks run on the stripped id so a provider name can never hide or fake a match.
+ */
+export function stripProviderPrefix(model: string): string {
+  return model.includes('/') ? (model.split('/').pop() ?? model) : model;
+}
+
 function hasHighFastVariant(model: string): boolean {
-  return /-high-fast/i.test(model);
+  return /-high-fast/i.test(stripProviderPrefix(model));
 }
 
 function hasFastSuffix(model: string): boolean {
-  return /-fast$|fast=true/i.test(model);
+  return /-fast$|fast=true/i.test(stripProviderPrefix(model));
 }
 
 function normalizeModelIdForFamily(model: string): string {
-  const withoutProviderPrefix = model.includes('/') ? (model.split('/').pop() ?? model) : model;
+  const withoutProviderPrefix = stripProviderPrefix(model);
   const withoutOverrides = withoutProviderPrefix.split('[')[0] ?? withoutProviderPrefix;
   return withoutOverrides.toLowerCase();
 }
@@ -358,7 +367,10 @@ export function checkModelsPreflight(
   return errors;
 }
 
-export type ModelCatalogLoader = (clis: string[]) => Promise<ModelCatalogByCli> | ModelCatalogByCli;
+export type ModelCatalogLoader = (
+  clis: string[],
+  wantedByCli: Record<string, string[]>,
+) => Promise<ModelCatalogByCli> | ModelCatalogByCli;
 
 export async function runModelsPreflight(
   config: HomeModelsConfig,
@@ -370,7 +382,14 @@ export async function runModelsPreflight(
         .filter((value): value is string => typeof value === 'string' && value.length > 0),
     ),
   );
-  const catalog = await loadCatalog(requiredClis);
+  const wantedByCli: Record<string, string[]> = {};
+  for (const role of MODEL_ROLES) {
+    const roleConfig = config[role];
+    if (roleConfig?.cli) {
+      (wantedByCli[roleConfig.cli] ??= []).push(roleConfig.model);
+    }
+  }
+  const catalog = await loadCatalog(requiredClis, wantedByCli);
   const errors = checkModelsPreflight(config, catalog);
   return {
     ok: errors.length === 0,
@@ -394,16 +413,87 @@ export function parseAgentModelsOutput(output: string): string[] {
     .filter((id): id is string => Boolean(id));
 }
 
+/** Parses `opencode models`: one `provider/model` id per line, e.g. `cursor-acp/gpt-5.3-codex-high`. */
+export function parseOpenCodeModelsOutput(output: string): string[] {
+  return output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._\-\[\]=,]+)+$/.test(line));
+}
+
 function commandForCli(cli: string): string {
   if (cli === 'cursor-agent') {
     return 'set -o pipefail; agent models | cat';
   }
+  if (cli === 'opencode') {
+    return 'set -o pipefail; opencode models | cat';
+  }
   throw new Error(`Unsupported CLI for model list lookup: ${cli}`);
 }
 
-function loadModelCatalogFromCli(clis: string[], env: NodeJS.ProcessEnv): ModelCatalogByCli {
+function sleepMs(ms: number): void {
+  if (ms > 0) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  }
+}
+
+/**
+ * Lists OpenCode 2.x model ids through the background service (never `--standalone`, whose fresh
+ * private server only lists the cursor-acp plugin's 6 built-in ids). The service loads plugin
+ * models per directory a few seconds after the first request, so this polls until every wanted id
+ * is listed or the attempts run out. It runs from the system temp folder: the launchd-started
+ * service cannot read macOS privacy-protected folders such as ~/Documents (HTTP 500).
+ */
+export function loadOpenCodeModelIds(
+  env: NodeJS.ProcessEnv,
+  wanted: string[],
+  options: { attempts?: number; delayMs?: number } = {},
+): string[] {
+  const attempts = Math.max(1, options.attempts ?? 10);
+  const delayMs = options.delayMs ?? 2_000;
+  const command = commandForCli('opencode');
+  let last: string[] = [];
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const result = spawnSync('sh', ['-c', command], {
+      cwd: realpathSync(tmpdir()),
+      env,
+      encoding: 'utf8',
+      timeout: 30_000,
+      maxBuffer: TEN_MB,
+    });
+    if (result.error) {
+      throw new Error(`Failed to run ${command}: ${result.error.message}`);
+    }
+    const stderr = (result.stderr ?? '').trim();
+    if (result.status !== 0) {
+      throw new Error(`Command failed: ${command} (exit ${result.status})${stderr ? `; stderr: ${stderr}` : ''}`);
+    }
+    last = parseOpenCodeModelsOutput(result.stdout ?? '');
+    if (wanted.every((id) => last.includes(id))) {
+      return last;
+    }
+    if (attempt < attempts) {
+      sleepMs(delayMs);
+    }
+  }
+  return last;
+}
+
+function loadModelCatalogFromCli(
+  clis: string[],
+  wantedByCli: Record<string, string[]>,
+  env: NodeJS.ProcessEnv,
+): ModelCatalogByCli {
   const catalog: ModelCatalogByCli = {};
   for (const cli of clis) {
+    if (cli === 'opencode') {
+      const ids = loadOpenCodeModelIds(env, wantedByCli[cli] ?? []);
+      if (ids.length === 0) {
+        throw new Error('No model ids parsed from opencode models output.');
+      }
+      catalog[cli] = ids;
+      continue;
+    }
     const command = commandForCli(cli);
     const result = spawnSync('sh', ['-c', command], {
       env,
@@ -442,7 +532,7 @@ export async function runPreflight(
   const configContents = readFileSync(configPath, 'utf8');
   const models = readModelsConfigFromYaml(configContents);
 
-  return runModelsPreflight(models, (clis) => loadModelCatalogFromCli(clis, env));
+  return runModelsPreflight(models, (clis, wantedByCli) => loadModelCatalogFromCli(clis, wantedByCli, env));
 }
 
 async function runCli(argv: string[], env: NodeJS.ProcessEnv): Promise<void> {
