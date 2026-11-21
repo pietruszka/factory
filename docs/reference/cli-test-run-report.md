@@ -16,7 +16,7 @@ Status: **reviewed and merged; M0 is done.** Corrected after merge: OpenCode rea
 
 | | Cursor agent (`agent`) | OpenCode (`opencode`) |
 | --- | --- | --- |
-| Pinned version | `2026.11.19-f005e9d` | `1.19.5` (installed now: 2.3.2; pin moves once a 2.x success is recorded, see [OpenCode 2.x](#opencode-2-x-2-3-2)) |
+| Pinned version | `2026.11.19-f005e9d` | `2.3.2` (M0 ran on `1.19.5`; see [OpenCode 2.x](#opencode-2-x-2-3-2)) |
 | Structured output | `--output-format json`: one final result object (`stream-json` also exists) | `--format json`: newline-delimited events `step_start`, `text`, `step_finish` |
 | Usage fields | `inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens` | `tokens.total`, `input`, `output`, `reasoning`, `cache.read`, `cache.write` |
 | Cost field | none: cost is not reported by the CLI | `step_finish.part.cost` (real USD for `cursor-acp/` models, `0` for free models) |
@@ -30,7 +30,7 @@ Status: **reviewed and merged; M0 is done.** Corrected after merge: OpenCode rea
 | Global skills | **still open**, workaround recorded | 1.19.5: loaded from `~/.agents/skills/<name>/SKILL.md` (`opencode debug skill`); 2.3.2: unchecked, that command is gone |
 | Models | `agent models` (Cursor subscription) | free `opencode/*` models plus Cursor models via the `cursor-acp/` provider (174 on 1.19.5, 286 on 2.3.2 including Opus 5.5) |
 | L2 contract suite | 19 of 19 passed | 19 of 19 passed, plus 2 `cursor-acp/` and 2 OpenCode 2.x cases |
-| Live spend | not reported by the CLI; a one-line probe on a nano model, far below $1 | $0.0049 reported by the CLI ($0 free-model runs plus one `cursor-acp/` probe) |
+| Live spend | not reported by the CLI; a one-line probe on a nano model, far below $1 | $0.0092 reported by the CLI ($0 free-model runs plus one `cursor-acp/` probe each on 1.19.5 and 2.3.2) |
 
 Full evidence for each fact (commands, docs and fixture fields) is on [CLI facts (FAC-4)](/reference/cli-facts).
 
@@ -63,7 +63,7 @@ The owner's OpenCode loads the `cursor-acp` plugin, which exposes the Cursor sub
 - **Builder and planner model: available.** `cursor-acp/gpt-5.3-codex-high` is listed, so OpenCode can plan or build on the same model as Cursor agent.
 - **Reviewer model:** not available on 1.19.5 (newest Opus there was 4.7). **On 2.3.2 `cursor-acp/claude-opus-5-5-high` is listed.** The reviewer stays on Cursor agent for now (D-37).
 - **Fast variants come through too** (for example `cursor-acp/gpt-5.3-codex-high-fast`). Preflight strips the provider prefix before the family and fast checks, so these are rejected.
-- **Probe, 21 Nov 2026** (`opencode run --format json --model cursor-acp/gpt-5.4-nano-none "Reply with exactly: PROBE_OK"`, sandbox cwd, redacted fixture `test/fixtures/cli/opencode/probe-cursor-acp.json`):
+- **Probe, 21 Nov 2026** (`opencode run --format json --model cursor-acp/gpt-5.4-nano-none "Reply with exactly: PROBE_OK"`, sandbox cwd, redacted fixture `test/fixtures/cli/opencode/v1/probe-cursor-acp.json`):
   - succeeded, exit 0, final text `PROBE_OK`, about 33 s;
   - same NDJSON event types as free models, but **4 steps**: the bridge first emitted three `write` tool calls (`text` with tool-call JSON, then `tool_use`, then `step_finish` with reason `tool-calls` and zero tokens), then a final step with the answer;
   - tokens are reported only on the final `step_finish` (24,495 input, 7 output, no cache);
@@ -87,7 +87,13 @@ The owner upgraded OpenCode to 2.3.2 (Homebrew) on 21 Nov 2026, after M0. All fa
 - **Read-only:** the built-in `plan` agent (`--agent plan`) denies edits (bash is still allowed). The probe now uses it. The config workaround still applies for bash.
 - **Version:** `opencode --version` prints `opencode v2.3.2`. The contract suite's version compare now reads the number from either format.
 - **Global skills:** `opencode debug skill` is gone (2.x `debug` has `agents`, `config`, `heap-dump`, `paths`), so global skill loading is **unchecked on 2.x**. Workaround: same as for Cursor agent, confirm it when the front-door skill is built (FR-28).
-- **Live probe, 21 Nov 2026, failed.** `opencode run --format json --archived --agent plan --model cursor-acp/gpt-5.4-nano-none "Reply with exactly: PROBE_OK"` was run once from the probe sandbox, which was then under `~/Documents`. It exited 1 after 90 ms with one event, `{"type":"error","sessionID":"","error":{"type":"unknown","message":"UnexpectedStatus: 500"}}`. No session was created and no model was called. It was not retried. This error shape is now a contract case (`cases/service-error-2x.json`), and the adapter maps it to `exit_nonzero` with the error message as text. **The 2.x success event shape, tokens and cost are still unrecorded.** One more approved run, from a sandbox outside the protected folders, is needed before the pin moves to 2.3.2.
+- **Live probes on 2.3.2, 21 Nov 2026** (`opencode run --format json --archived --agent plan --model cursor-acp/gpt-5.4-nano-none "Reply with exactly: PROBE_OK"`):
+  - **First run failed.** The sandbox was under `~/Documents`. It exited 1 after 90 ms with one event, `{"type":"error","sessionID":"","error":{"type":"unknown","message":"UnexpectedStatus: 500"}}`, and no session or model call. It is kept as a contract case (`cases/service-error-2x.json`); the adapter maps it to `exit_nonzero` with the message as text.
+  - **Second run passed.** The sandbox was under `~/.cache`, `PWD` was set to it, and the runner waited for the model list first. It exited 0 after about 11 s with final text `PROBE_OK`. Three events: `step_start`, `text`, `step_finish` (reason `stop`). The shape matches 1.19.5 except that `part.snapshot` and `tokens.total` are gone. With the `plan` agent there were no tool calls (1.19.5 had three).
+  - Tokens on `step_finish.part.tokens`: 21,418 input, 7 output, 0 reasoning, no cache.
+  - Cost reported by the CLI on `step_finish.part.cost`: `0.00429235` USD.
+  - `sessionID` `ses_e027441a4ffetvodRfyyc56W2H` is on every event, including inside `part`. The session was created archived.
+  - This recording is now `test/fixtures/cli/opencode/probe.json`, and the pin is 2.3.2. The 1.19.5 recordings moved to `test/fixtures/cli/opencode/v1/` (kept as parser regressions, outside the pin). The derived cases were re-labelled 2.3.2 and lost `tokens.total`.
 
 ### Still open, with workarounds
 
@@ -100,7 +106,6 @@ The owner upgraded OpenCode to 2.3.2 (Homebrew) on 21 Nov 2026, after M0. All fa
 | Tool side effects outside the sandbox | OpenCode via `cursor-acp/` | The bridge may call write tools even on a one-line prompt, resolving paths against `PWD` | Always set `PWD` to the sandbox cwd (done in the probe runner); the pipeline's write-scope diff check still applies |
 | FR-14 invocation | OpenCode 2.x | `--command` removed in 2.x | A custom agent via `--agent <name>`, or a prompt naming the command; confirm when the FR-14 smoke test is built |
 | Background service folder access | OpenCode 2.x | The launchd-started service cannot read `~/Documents`, `~/Desktop`, `~/Downloads` (HTTP 500) | Keep `FACTORY_HOME`, sandboxes and worktrees outside those folders (the default `~/.factory` is fine), or the owner grants the service folder access in macOS settings |
-| 2.x success output | OpenCode 2.x | The one 2.x probe hit the folder-access 500; success events, tokens and cost not yet recorded | One more approved probe from a sandbox outside the protected folders; then move the pin to 2.3.2 |
 | Global skill loading | Cursor agent | Not checked: `agent` has no command that lists loaded skills, and checking it needs a model call | The factory command is the entry point either way; confirm the Cursor path when the front-door skill is built (FR-28) |
 
 ## 2. L2 contract suite (M0-4, FAC-5)
@@ -109,7 +114,7 @@ Command: `npm test` (Vitest, no live CLI calls; a network guard blocks in-proces
 
 | Scope | Result |
 | --- | --- |
-| Whole repo | 12 test files, 121 tests, all passed at M0 sign-off (144 after the OpenCode `cursor-acp/` and 2.x follow-ups) |
+| Whole repo | 12 test files, 121 tests, all passed at M0 sign-off (146 after the OpenCode `cursor-acp/` and 2.x follow-ups) |
 | Adapter contract suite (`test/contract/adapter-contract.test.ts`) | 38 shared tests, all passed: 19 for `cursor-agent`, 19 for `opencode`; plus 2 `cursor-acp/` and 2 OpenCode 2.x cases added after M0 |
 
 Each CLI runs the same shared cases, including the real probe fixture, success, malformed JSON, missing cost (`cost_missing`), timeout, non-zero exit, empty output, session id present and absent, and the stale-fixture guard against the versions pinned in `test/fixtures/cli/pins.json`.
@@ -142,7 +147,7 @@ Recorded as D-38 in the Architecture and decisions log.
 
 ## 5. Live spend
 
-Read from `test/fixtures/cli/cursor-agent/probe.json`, `test/fixtures/cli/opencode/probe.json` and `test/fixtures/cli/summary.json`.
+Read from `test/fixtures/cli/cursor-agent/probe.json`, `test/fixtures/cli/opencode/v1/probe.json` (M0, 1.19.5), `test/fixtures/cli/opencode/probe.json` (2.3.2) and `test/fixtures/cli/summary.json`.
 
 | Run | CLI and model | Reported cost |
 | --- | --- | --- |
@@ -151,10 +156,11 @@ Read from `test/fixtures/cli/cursor-agent/probe.json`, `test/fixtures/cli/openco
 | FAC-4 fact checks (2 per CLI: one call and one resume, listed on [CLI facts](/reference/cli-facts)) | Same models as the probe | Cursor: not reported; OpenCode: `0` |
 | FAC-6 preflight | `agent models` (lists models, no model call) | Nothing to spend |
 | `cursor-acp/` probe, 21 Nov 2026 (`Reply with exactly: PROBE_OK`) | OpenCode, `cursor-acp/gpt-5.4-nano-none` | `0.00490775` (reported by the CLI); 24,495 input and 7 output tokens |
+| OpenCode 2.3.2 probes, 21 Nov 2026 (`Reply with exactly: PROBE_OK`, `--agent plan`) | OpenCode, `cursor-acp/gpt-5.4-nano-none` | First run: nothing spent (HTTP 500 before any model call). Second run: `0.00429235` (reported by the CLI); 21,418 input and 7 output tokens |
 
 `summary.json`: `totalReportedCostUsd: 0`, with `cursor-agent` listed as unknown.
 
-**Total live spend:** OpenCode $0.0049 (all from the `cursor-acp/` probe; free-model runs were $0). Cursor agent: not reported by the CLI; one-line prompts on a nano model, far below $1. Every run stayed at or below the $1 cap (D-30). No dollar figure is estimated for Cursor here, because the nano model has no price in the price table.
+**Total live spend:** OpenCode $0.0092 ($0.0049 from the 1.19.5 `cursor-acp/` probe and $0.0043 from the 2.3.2 probe; free-model runs were $0). Cursor agent: not reported by the CLI; one-line prompts on a nano model, far below $1. Every run stayed at or below the $1 cap (D-30). No dollar figure is estimated for Cursor here, because the nano model has no price in the price table.
 
 ## 6. Handed to the Copilot CLI follow-up
 

@@ -40,7 +40,7 @@ OpenCode reaches the Cursor subscription through the `cursor-acp/` provider. Ava
 | `gpt-5.3-codex-high` (planner, builder) | yes | yes: `cursor-acp/gpt-5.3-codex-high` (1.19.5 and 2.3.2) |
 | `claude-opus-5-5-high` (reviewer, vision judge) | yes | 2.3.2: yes, `cursor-acp/claude-opus-5-5-high`; 1.19.5: no (newest Opus was 4.7) |
 
-The defaults above are unchanged. For `cursor-acp/` models OpenCode reports a real cost on `step_finish.part.cost`, so no price-table estimate is used for them (probe result on [CLI test run report](/reference/cli-test-run-report#opencode-via-cursor-acp)).
+The defaults above are unchanged. For `cursor-acp/` models OpenCode reports a real cost on `step_finish.part.cost` on both 1.19.5 (`0.00490775`) and 2.3.2 (`0.00429235` for one `PROBE_OK` on `cursor-acp/gpt-5.4-nano-none`), so no price-table estimate is used for them (probe result on [CLI test run report](/reference/cli-test-run-report#opencode-via-cursor-acp)).
 
 ## Cost estimate sources
 

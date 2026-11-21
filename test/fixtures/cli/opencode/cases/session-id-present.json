@@ -1,10 +1,10 @@
 {
-  "derivedFrom": "../probe.json",
+  "derivedFrom": "../probe.json (re-derived for 2.3.2: same step_start/text/step_finish shape; 2.x tokens have no total)",
   "raw": {
     "stdout": "{\"type\":\"text\",\"sessionID\":\"ses_present\",\"part\":{\"type\":\"text\",\"text\":\"present\"}}\n{\"type\":\"step_finish\",\"sessionID\":\"ses_present\",\"part\":{\"type\":\"step-finish\",\"tokens\":{\"input\":2,\"output\":1},\"cost\":0.01}}\n",
     "stderr": "",
     "exitCode": 0,
     "timedOut": false,
-    "cliVersion": "1.19.5"
+    "cliVersion": "opencode v2.3.2"
   }
 }
