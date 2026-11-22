@@ -7,6 +7,8 @@ description: The SQLite event log at factory.db - location, pragmas, schema vers
 
 The event log is the factory's SQLite database. It records runs, steps, events, gate rows, processes, approvals, shadow verdicts and outcomes. The code is `src/event-log/`. Nothing in the factory command line uses it yet; later tickets (run folders, state machine, status) build on it.
 
+The per-run folder that sits next to it under the factory home is described in [Run folder](/reference/run-folder).
+
 ## File and driver
 
 - **Driver.** Node's built-in `node:sqlite` (`DatabaseSync`), needs Node `>=22.13`. There is no SQLite npm dependency. Node 22 prints an `ExperimentalWarning` on stderr the first time the module loads. `@types/node` 20 has no typings for it, so `src/event-log/node-sqlite.d.ts` declares the few members used; delete that file when `@types/node` is upgraded. The module is loaded with `createRequire`, because the vitest runner cannot resolve a static `node:sqlite` import.
