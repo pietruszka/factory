@@ -140,6 +140,8 @@ Every error is a `FactoryError` with exit code 2. `where` is `<file>:<line>`, or
 | `repo_config_missing` | No file in `repos/` matches the repo. |
 | `repo_config_ambiguous` | More than one file matches the repo. |
 
+`protected_globs`, `role_write_globs` and `snapshot_ignore` are used by [Write scope](/reference/write-scope).
+
 ## Not in this ticket
 
 Gate-command existence and `config_drift` checks, role prompt files, writing config, a `factory config` command, and renaming `models:`.

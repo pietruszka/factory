@@ -86,6 +86,8 @@ Each is a `FactoryError` with `where` and `next`, exit code 2.
 
 They use real git on disposable repos under a temp home, and a fake command runner. They never touch the real factory home, cache folder or a real work-repo checkout.
 
+Role write scopes are checked by a snapshot diff of the worktree; see [Write scope](/reference/write-scope).
+
 ## Not in this ticket
 
-A factory command, the run state machine and marking a run `passed`, snapshot and write-scope diff, retention of old worktrees, preflight (the git version floor), `WorkerRuntime`, cap enforcement, stale-pid marking, a live OpenCode run, creating `factory/<ticket>` in the work repo.
+A factory command, the run state machine and marking a run `passed`, retention of old worktrees, preflight (the git version floor), `WorkerRuntime`, cap enforcement, stale-pid marking, a live OpenCode run, creating `factory/<ticket>` in the work repo.
