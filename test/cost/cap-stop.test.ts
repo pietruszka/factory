@@ -51,6 +51,7 @@ describe('reaching a cap stops the run as budget or timeout, keeps the worktree,
     const next = nextActionSection(reportOf(state));
     expect(next).toContain('30 min');
     expect(next).toContain('factory resume FE-123');
+    expect(next).toContain('--cap');
   });
 
   test("a step's timeoutMs is tightened to the wall-clock that remains in the run", async () => {

@@ -37,7 +37,7 @@ function budgetNext(ticket: string, spentUsd: number, capUsd: number): string {
 }
 
 function timeoutNext(ticket: string, elapsedMs: number, capMinutes: number): string {
-  return `The run used ${Math.floor(elapsedMs / MINUTE_MS)} min and reached its ${capMinutes} min wall-clock cap. The worktree is kept. To continue: factory resume ${ticket}.`;
+  return `The run used ${Math.floor(elapsedMs / MINUTE_MS)} min and reached its ${capMinutes} min wall-clock cap. The worktree is kept. To continue, raise the cap explicitly: factory resume ${ticket} --cap +$2.`;
 }
 
 /**

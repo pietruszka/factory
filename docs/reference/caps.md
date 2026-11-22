@@ -67,7 +67,7 @@ The worktree is never removed. A step's `timeoutMs` is tightened to the wall-clo
 Each cap or `cost_missing` stop writes an `events` row of type `run_stop` whose payload has a `next` text. While the run's status is still that stop, `writeReport` prints it under `## Next action`.
 
 - **Budget:** the amount spent and the cap, and that resuming needs an explicit cap, for example `factory resume FE-123 --cap +$2`.
-- **Timeout:** the elapsed minutes, for example `30 min`, and `factory resume FE-123`.
+- **Timeout:** the elapsed minutes, for example `30 min`, and that resuming needs an explicit cap, for example `factory resume FE-123 --cap +$2`.
 - **cost_missing:** the step and the fields that were missing.
 
 The `factory resume` command and its `--cap` flag are not built yet (see below); the text names the command the later ticket adds.
