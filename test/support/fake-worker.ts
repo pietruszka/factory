@@ -5,7 +5,7 @@ import type { Deps } from '../../src/platform/deps.js';
 import type { ProcessTable } from '../../src/ports/process-table.js';
 import type { Spawner } from '../../src/ports/spawner.js';
 import { startStep, type StepOutput } from '../../src/worker-runtime/start-step.js';
-import type { StepResult, WorkerRuntime } from '../../src/worker-runtime/types.js';
+import type { AdapterRuntimeOptions, StepResult, WorkerRuntime } from '../../src/worker-runtime/types.js';
 
 /** One scripted step, read from a JSON file under test/fixtures/worker-scenarios/. */
 export interface WorkerScenario {
@@ -34,6 +34,8 @@ export interface FakeWorkerOptions {
   spawner: Spawner;
   processTable: ProcessTable;
   deps: Deps;
+  /** When given, every spawned process is also written as a `processes` row. */
+  eventLog?: AdapterRuntimeOptions['eventLog'];
 }
 
 const CHILD_SCRIPT = join(import.meta.dirname, 'fake-worker-child.mjs');
@@ -69,7 +71,7 @@ function readEnvelope(stdout: string): Envelope {
 
 /** A WorkerRuntime (id `fake-worker`) that plays a scenario. Its child is never a model CLI. */
 export function createFakeWorkerRuntime(options: FakeWorkerOptions): WorkerRuntime {
-  const { spawner, deps } = options;
+  const { spawner, deps, eventLog } = options;
   const scenario = validate(options.scenario);
   const malformedTimes = scenario.final?.malformedTimes ?? 0;
   let starts = 0;
@@ -107,6 +109,7 @@ export function createFakeWorkerRuntime(options: FakeWorkerOptions): WorkerRunti
       return startStep({
         spawner,
         deps,
+        eventLog,
         request,
         command: process.execPath,
         args: [CHILD_SCRIPT, JSON.stringify({ ...scenario, text })],
