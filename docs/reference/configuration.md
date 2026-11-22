@@ -5,6 +5,8 @@ description: What docs/.vitepress/config.ts sets, and why.
 
 # VitePress config
 
+This page is about the documentation site. For the factory's own config files, see [Factory config](/reference/factory-config).
+
 Site configuration is `docs/.vitepress/config.ts`. That file is the source of truth. This page lists the options it sets so a reader can see why they are there. It does not describe every VitePress option.
 
 The config is TypeScript, imported through `defineConfig` from `vitepress`, then passed through `withMermaid` from `vitepress-plugin-mermaid`. `package.json` sets `"type": "module"`, and VitePress loads `config.ts` itself. There is no separate compile step.

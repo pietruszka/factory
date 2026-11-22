@@ -5,7 +5,7 @@ description: FAC-6 model selection by role, preflight gates, and price-table pro
 
 # Model IDs by role (FAC-6)
 
-This page captures FAC-6 `[M0-5]` for home-level `config.yaml` `models:` defaults and preflight rules.
+This page captures FAC-6 `[M0-5]` for home-level `config.yaml` `models:` defaults and preflight rules. The other config keys, the per-repo files and the merge are on [Factory config](/reference/factory-config).
 
 ## Decision table
 

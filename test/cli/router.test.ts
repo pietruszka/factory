@@ -83,7 +83,7 @@ describe('router: unknown command or flag', () => {
     expect(parseEnvelope(run).errors?.[0]?.code).toBe('no_command');
   });
 
-  test('the router is built on node:util parseArgs in strict mode (no new dependency)', () => {
+  test('the router is built on node:util parseArgs in strict mode (dependencies are only yaml and zod)', () => {
     const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
     const source = readFileSync(resolve(root, 'src/cli/router.ts'), 'utf8');
     const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as {
@@ -93,6 +93,6 @@ describe('router: unknown command or flag', () => {
     expect(source).toMatch(/parseArgs/);
     expect(source).toMatch(/from 'node:util'/);
     expect(source).toMatch(/strict:\s*true/);
-    expect(Object.keys(pkg.dependencies)).toEqual(['zod']);
+    expect(Object.keys(pkg.dependencies)).toEqual(['yaml', 'zod']);
   });
 });
