@@ -9,11 +9,15 @@ export interface SpawnRequest {
   command: string;
   args: readonly string[];
   cwd?: string;
+  /** Added to the parent's environment for the child; a key given here wins. */
+  env?: Readonly<Record<string, string>>;
 }
 
 export interface SpawnedProcess {
   pid: number;
   exit: Promise<{ code: number | null; signal: string | null }>;
+  /** Everything the child wrote to stdout and stderr, once both pipes closed. Absent when not captured. */
+  output?: Promise<{ stdout: string; stderr: string }>;
 }
 
 export interface Spawner {
@@ -31,8 +35,17 @@ export interface FakeSpawner extends Spawner {
 /** The command text recorded in the process table: the program and its arguments. */
 const commandLine = (request: SpawnRequest): string => [request.command, ...request.args].join(' ');
 
-/** A Spawner that starts nothing: it records requests and hands out ascending pids. */
-export function createFakeSpawner(): FakeSpawner {
+export interface FakeSpawnReply {
+  stdout?: string;
+  stderr?: string;
+  code?: number;
+}
+
+/**
+ * A Spawner that starts nothing: it records requests and hands out ascending pids.
+ * `reply` scripts what each child wrote and its exit code; the default is silent success.
+ */
+export function createFakeSpawner(options: { reply?: (request: SpawnRequest) => FakeSpawnReply } = {}): FakeSpawner {
   const requests: SpawnRequest[] = [];
   const kills: Array<{ pid: number; command: string }> = [];
   let nextPid = 1000;
@@ -41,7 +54,12 @@ export function createFakeSpawner(): FakeSpawner {
     kills,
     spawn: async (request) => {
       requests.push(request);
-      return { pid: nextPid++, exit: Promise.resolve({ code: 0, signal: null }) };
+      const reply = options.reply?.(request) ?? {};
+      return {
+        pid: nextPid++,
+        exit: Promise.resolve({ code: reply.code ?? 0, signal: null }),
+        output: Promise.resolve({ stdout: reply.stdout ?? '', stderr: reply.stderr ?? '' }),
+      };
     },
     killTree: async (pid, command) => {
       kills.push({ pid, command });
@@ -97,9 +115,16 @@ export function createMacosSpawner(options: {
       new Promise((resolve, reject) => {
         const child = spawn(request.command, [...request.args], {
           cwd: request.cwd,
+          env: { ...process.env, ...request.env },
           detached: true,
-          stdio: 'ignore',
+          stdio: ['ignore', 'pipe', 'pipe'],
         });
+        const chunks: { stdout: string[]; stderr: string[] } = { stdout: [], stderr: [] };
+        child.stdout.setEncoding('utf8').on('data', (text: string) => chunks.stdout.push(text));
+        child.stderr.setEncoding('utf8').on('data', (text: string) => chunks.stderr.push(text));
+        const output = new Promise<{ stdout: string; stderr: string }>((done) =>
+          child.once('close', () => done({ stdout: chunks.stdout.join(''), stderr: chunks.stderr.join('') })),
+        );
         child.once('error', (error) =>
           reject(
             new FactoryError({
@@ -119,6 +144,7 @@ export function createMacosSpawner(options: {
             exit: new Promise((done) =>
               child.once('exit', (code, signal) => done({ code, signal })),
             ),
+            output,
           });
         });
       }),

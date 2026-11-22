@@ -5,7 +5,7 @@ description: The five ports through which the core reaches outside systems, thei
 
 # Ports (FAC-18)
 
-The core reaches outside systems only through ports: small interfaces in `src/ports/`. Tests use the fakes; macOS uses the real implementations. It is a library: there is no `factory` command for it. Later tickets call it (the worker runtime and `factory kill`).
+The core reaches outside systems only through ports: small interfaces in `src/ports/`. Tests use the fakes; macOS uses the real implementations. It is a library: there is no `factory` command for it. The [worker runtime](/reference/worker-runtime) already calls it; `factory kill` will.
 
 | Port | What it is for | Fake | macOS implementation |
 | --- | --- | --- | --- |
@@ -37,7 +37,7 @@ await host.push({ repo: 'example-org/example-frontend', branch: 'feat/FE-123-exa
 
 ## Spawner and ProcessTable
 
-`Spawner.spawn({ command, args, cwd? })` starts the child detached, so it leads its own process group, and records `{ pid, command, startedAt }` in the process table. `command` in the record is the program and its arguments joined by spaces. `startedAt` comes from `Deps.now()`.
+`Spawner.spawn({ command, args, cwd?, env? })` starts the child detached, so it leads its own process group, and records `{ pid, command, startedAt }` in the process table. `command` in the record is the program and its arguments joined by spaces. `startedAt` comes from `Deps.now()`. `env` is added to the parent's environment for the child, and a key given there wins. The returned process has `pid`, `exit` and `output` (the captured stdout and stderr, once both pipes closed). The worker runtime uses these: see [Worker runtime](/reference/worker-runtime).
 
 `Spawner.killTree(pid, command)` returns one of:
 
@@ -49,7 +49,7 @@ await host.push({ repo: 'example-org/example-frontend', branch: 'feat/FE-123-exa
 
 The macOS process table asks `ps -o command= -p <pid>`. The fake table lets a test call `plantRecycledPid(pid, otherCommand)` so `stillMatches` turns false.
 
-The fake spawner starts nothing. It records `requests` and `kills`, and hands out ascending pids.
+The fake spawner starts nothing. It records `requests` and `kills`, and hands out ascending pids. `createFakeSpawner({ reply })` scripts each child's stdout, stderr and exit code.
 
 ## Platform
 
@@ -99,4 +99,4 @@ Local `git` is allowed. So are the spawn sites that existed before this ticket: 
 
 ## Deferred
 
-Not in this ticket: live `acli` and `gh` adapters (they come with intake and draft pull requests), the `factory kill` command and run state wiring, the worker runtime, the screenshot, pixel-diff and region-judge ports, and moving git, install, preflight, probe and version-check onto `Spawner`. File `chmod` also stays outside `Platform`.
+Not in this ticket (the worker runtime is [FAC-19](/reference/worker-runtime)): live `acli` and `gh` adapters (they come with intake and draft pull requests), the `factory kill` command and run state wiring, the screenshot, pixel-diff and region-judge ports, and moving git, install, preflight, probe and version-check onto `Spawner`. File `chmod` also stays outside `Platform`.

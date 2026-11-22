@@ -23,6 +23,8 @@ Docs and fixtures use `<tmp>`-style placeholders, never a user-home path. A repo
 
 A static test scans `test/` and fails when a file starts `agent`, `cursor-agent` or `opencode` with `spawn`, `exec` or `fork`. The only place that may stand in for those CLIs is `test/support/fake-cli.ts`.
 
+The scripted fake worker for pipeline tests is described in [Worker runtime](/reference/worker-runtime#fake-worker).
+
 Tests use the recording fakes for outside systems, and a second static scan keeps the rest of `src/` from calling `gh`, `acli`, `security`, `pbcopy` or `pbpaste`. See [Ports](/reference/ports).
 
 ## L3 tests and their budget

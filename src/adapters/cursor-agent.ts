@@ -1,3 +1,5 @@
+import { createCliRuntime } from '../worker-runtime/cli-runtime.js';
+import type { AdapterRuntimeOptions, StepRequest, WorkerRuntime } from '../worker-runtime/types.js';
 import {
   RawStepInputSchema,
   coerceRawStepInput,
@@ -89,5 +91,34 @@ export function parseCursorAgentStepResult(input: unknown, modelId?: string): St
       modelId,
     ),
     raw,
+  );
+}
+
+/** Program arguments for one Cursor agent step. The prompt comes last. */
+function cursorAgentArgs(request: StepRequest): string[] {
+  return [
+    '-p',
+    '--trust',
+    '--output-format',
+    'json',
+    ...(request.readOnly ? ['--mode', 'ask'] : []),
+    '--model',
+    request.model,
+    ...(request.resumeSessionId === undefined ? [] : ['--resume', request.resumeSessionId]),
+    request.prompt,
+  ];
+}
+
+/** Runs the Cursor agent CLI as a WorkerRuntime, through the injected Spawner. */
+export function createCursorAgentRuntime(options: AdapterRuntimeOptions): WorkerRuntime {
+  return createCliRuntime(
+    {
+      id: 'cursor-agent',
+      command: 'agent',
+      capabilities: { resume: true, readOnly: true, structuredOutput: true },
+      buildArgs: cursorAgentArgs,
+      parse: parseCursorAgentStepResult,
+    },
+    options,
   );
 }
