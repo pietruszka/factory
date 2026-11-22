@@ -1,3 +1,5 @@
+import { createCliRuntime } from '../worker-runtime/cli-runtime.js';
+import type { AdapterRuntimeOptions, StepRequest, WorkerRuntime } from '../worker-runtime/types.js';
 import {
   RawStepInputSchema,
   coerceRawStepInput,
@@ -213,5 +215,33 @@ export function parseOpenCodeStepResult(input: unknown, modelId?: string): StepR
       modelId,
     ),
     raw,
+  );
+}
+
+/** Program arguments for one OpenCode step. Never `--auto`: it auto-approves permissions. The prompt comes last. */
+function openCodeArgs(request: StepRequest): string[] {
+  return [
+    'run',
+    '--format',
+    'json',
+    ...(request.readOnly ? ['--agent', 'plan'] : []),
+    '--model',
+    request.model,
+    ...(request.resumeSessionId === undefined ? [] : ['--session', request.resumeSessionId]),
+    request.prompt,
+  ];
+}
+
+/** Runs the OpenCode CLI as a WorkerRuntime, through the injected Spawner. Never passes `--auto`. */
+export function createOpenCodeRuntime(options: AdapterRuntimeOptions): WorkerRuntime {
+  return createCliRuntime(
+    {
+      id: 'opencode',
+      command: 'opencode',
+      capabilities: { resume: true, readOnly: true, structuredOutput: true },
+      buildArgs: openCodeArgs,
+      parse: parseOpenCodeStepResult,
+    },
+    options,
   );
 }

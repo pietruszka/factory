@@ -37,6 +37,25 @@ describe('the macOS Spawner and ProcessTable', () => {
   });
 });
 
+describe('the macOS Spawner environment and output', () => {
+  test('forwards the request env to the child and captures its stdout and stderr', async () => {
+    const processTable = createMacosProcessTable();
+    const spawner = createMacosSpawner({ processTable, deps: createFakeDeps() });
+    const cwd = makeTempHome();
+
+    const child = await spawner.spawn({
+      command: '/usr/bin/env',
+      args: [],
+      cwd,
+      env: { PWD: cwd, EXAMPLE_FLAG: '1' },
+    });
+    const output = await child.output;
+
+    expect(output?.stdout.split('\n')).toEqual(expect.arrayContaining([`PWD=${cwd}`, 'EXAMPLE_FLAG=1']));
+    expect(output?.stderr).toBe('');
+  });
+});
+
 describe('the macOS Spawner killTree', () => {
   const setup = () => {
     const processTable = createMacosProcessTable();
