@@ -32,6 +32,8 @@ export interface RunCliOptions extends CliIo {
   commands?: CommandTable;
   /** The operating system, for example `darwin`. Tests set it to check the refusal on other systems. */
   os?: NodeJS.Platform;
+  /** Where the command runs from; defaults to `process.cwd()`. Tests pass a temp folder instead of changing directory. */
+  cwd?: string;
 }
 
 const failure = (command: string, error: unknown): CliOutput => {
@@ -71,8 +73,14 @@ export async function runCli(opts: RunCliOptions): Promise<number> {
     const { rest } = invocation;
     const def = lookupCommand(commands, command);
     await checkEnvironment(opts, { checkGit: !def.skipGitCheck });
-    const values = parseCommandArgs(def, command, rest);
-    const result = await def.run({ values, packageVersion: opts.packageVersion, commands });
+    const { values, positionals } = parseCommandArgs(def, command, rest);
+    const result = await def.run({
+      values,
+      positionals,
+      cwd: opts.cwd ?? process.cwd(),
+      packageVersion: opts.packageVersion,
+      commands,
+    });
     return printOutput(
       {
         schema_version: 1,
@@ -81,7 +89,7 @@ export async function runCli(opts: RunCliOptions): Promise<number> {
         exit_code: EXIT_CODES.ok,
         message: result.message,
         errors: [],
-        next_command: null,
+        next_command: result.nextCommand ?? null,
         data: result.data,
       },
       opts,

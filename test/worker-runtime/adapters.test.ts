@@ -209,6 +209,7 @@ describe('the Cursor agent and OpenCode runtimes', () => {
         finish({ code: null, signal: 'SIGKILL' });
         return 'killed';
       },
+      termTree: async () => 'killed',
     };
     const step = createCursorAgentRuntime({ spawner, processTable, deps }).start(
       stepRequest(sandbox.worktree, { timeoutMs: 5000 }),

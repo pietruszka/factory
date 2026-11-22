@@ -5,7 +5,7 @@ description: The run state machine and step runner - statuses, legal transitions
 
 # Run state (FAC-20)
 
-A run is always in exactly one status. This page covers the code that moves it between statuses and runs worker steps with checkpoints. The code is `src/run-state/`. It is a library: there is no `factory run`, `resume`, `kill` or `status` command yet.
+A run is always in exactly one status. This page covers the code that moves it between statuses and runs worker steps with checkpoints. The code is `src/run-state/`. It is a library: there is no `factory run`, `resume` or `status` command yet. [`factory kill`](/reference/kill) exists and moves a run to `killed` through `transition`.
 
 `transition` is the only production writer of `runs.status`. It calls the storage helper `updateRunStatus` from the [event log](/reference/event-log) after it has checked that the move is legal. The storage helper itself still accepts any known status; tests may use it to arrange a state, production code must not.
 
@@ -71,5 +71,5 @@ With the optional `cost` argument, `runSteps` also records usage, enforces the d
 
 ## Deferred
 
-- The `factory` commands `run`, `plan`, `approve`, `resume`, `kill`, `status` and `outcome`; intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
-- Killing a process tree (FAC-23), the `factory resume` command, `--from`, `--cap` and the progress section of `plan.md` (FAC-24), and `factory status` (FAC-25).
+- The `factory` commands `run`, `plan`, `approve`, `resume`, `status` and `outcome` (`kill` is in [factory kill](/reference/kill)); intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
+- The `factory resume` command, `--from`, `--cap` and the progress section of `plan.md` (FAC-24), and `factory status` (FAC-25).

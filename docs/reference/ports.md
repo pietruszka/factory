@@ -47,9 +47,11 @@ await host.push({ repo: 'example-org/example-frontend', branch: 'feat/FE-123-exa
 | `pid_reused` | The pid exists but `ProcessTable.stillMatches(pid, command)` is false. Nothing is killed. |
 | `killed` | Descendants got `SIGKILL` first, deepest first, then the parent. |
 
+`Spawner.termTree(pid, command)` is the polite version: the same `stillMatches` check, the same children-first walk and the same three results, but it sends `SIGTERM`. `killTree` stays `SIGKILL`; it has no signal argument. A worker that ignores `SIGTERM` is escalated by [`killRun`](/reference/kill), which calls `termTree`, waits, then calls `killTree`. Only the spawner implementations call `process.kill`; the pipeline and the commands never do.
+
 The macOS process table asks `ps -o command= -p <pid>`. The fake table lets a test call `plantRecycledPid(pid, otherCommand)` so `stillMatches` turns false.
 
-The fake spawner starts nothing. It records `requests` and `kills`, and hands out ascending pids. `createFakeSpawner({ reply })` scripts each child's stdout, stderr and exit code.
+The fake spawner starts nothing. It records `requests`, `terms` (the `termTree` calls) and `kills`, and hands out ascending pids. `createFakeSpawner({ reply })` scripts each child's stdout, stderr and exit code.
 
 ## Platform
 

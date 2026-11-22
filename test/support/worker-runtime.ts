@@ -49,7 +49,9 @@ export function createRecordingSpawner(processTable: ProcessTable, deps: Deps): 
   return {
     requests: inner.requests,
     kills: inner.kills,
+    terms: inner.terms,
     killTree: inner.killTree,
+    termTree: inner.termTree,
     spawn: async (request) => {
       const child = await inner.spawn(request);
       processTable.record({
@@ -66,6 +68,7 @@ export function createRecordingSpawner(processTable: ProcessTable, deps: Deps): 
 export function withExitAfter(spawner: Spawner, advance: (ms: number) => void, ms: number): Spawner {
   return {
     killTree: spawner.killTree,
+    termTree: spawner.termTree,
     spawn: async (request) => {
       const child = await spawner.spawn(request);
       return {
