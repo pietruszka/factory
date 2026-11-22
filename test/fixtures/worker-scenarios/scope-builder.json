@@ -1,0 +1,1 @@
+{"edits":[{"path":"README.md","content":"edited by the fake worker\n"},{"path":".github/workflows/ci.yml","content":"name: example\n"},{"path":"src/feature.ts","content":"export const feature = 1;\n"}]}

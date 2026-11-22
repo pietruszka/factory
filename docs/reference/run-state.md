@@ -48,6 +48,8 @@ A run ends when it is `passed` or in a stop status. It is never left in a phase 
 
 A step that does not finish moves the run to a stop status: `exitReason` `timeout` gives `timeout`, `budget` gives `budget`, `killed` gives `killed`, anything else gives `needs_human`. A worker that never succeeds is therefore started once, not in a loop. A worker that hangs is stopped by the step's `timeoutMs` (default 60 seconds, from `Deps` timers), and the run becomes `timeout`.
 
+`runSteps` also takes an optional `writeScope` argument. With it, each attempt is snapshotted before and checked after the worker, and a step that writes outside its role's scope ends as `breach`; see [Write scope](/reference/write-scope).
+
 ## Retry and loop limits
 
 - **Malformed structured output.** The step is retried exactly once, in the same call, with the parse error added to the prompt and `resumeSessionId` set when the first attempt reported a session. A retry that returns valid output finishes the step and the run stays in its phase. A second malformed result ends the step as `failed` with `exit_reason` `schema_invalid` and the run as `needs_human`.
@@ -69,5 +71,5 @@ Dollar, turn and wall-clock caps, cost summing and the `cost_missing` check are 
 
 ## Deferred
 
-- The `factory` commands `run`, `plan`, `approve`, `resume`, `kill`, `status` and `outcome`; intake, routing, real gates, verifiers, reviewer, write-scope snapshots and opening a draft pull request.
-- Write-scope diffs (FAC-21), cap accounting and the `cost_missing` normaliser (FAC-22), killing a process tree (FAC-23), the `factory resume` command, `--from`, `--cap` and the progress section of `plan.md` (FAC-24), and `factory status` (FAC-25).
+- The `factory` commands `run`, `plan`, `approve`, `resume`, `kill`, `status` and `outcome`; intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
+- Cap accounting and the `cost_missing` normaliser (FAC-22), killing a process tree (FAC-23), the `factory resume` command, `--from`, `--cap` and the progress section of `plan.md` (FAC-24), and `factory status` (FAC-25).

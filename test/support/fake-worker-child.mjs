@@ -1,7 +1,7 @@
 // The child process of the scripted fake worker. It plays one scenario in its working folder.
 // It is not a model CLI. Started by test/support/fake-worker.ts through a Spawner.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
 // Safety net: no scenario child or grandchild outlives a crashed test run by more than this.
@@ -25,6 +25,10 @@ for (const edit of scenario.edits ?? []) {
   const target = inside(edit.path);
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, edit.content);
+}
+
+for (const path of scenario.deletes ?? []) {
+  rmSync(inside(path), { force: true });
 }
 
 if (scenario.ignoreSigterm) {

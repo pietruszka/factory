@@ -11,6 +11,8 @@ import type { AdapterRuntimeOptions, StepResult, WorkerRuntime } from '../../src
 export interface WorkerScenario {
   /** Files written under the step's cwd. */
   edits?: ReadonlyArray<{ path: string; content: string }>;
+  /** Paths removed under the step's cwd, after the edits. A path that does not exist is ignored. */
+  deletes?: readonly string[];
   /** The final JSON the step returns. The first `malformedTimes` starts return text that is not JSON. */
   final?: { json: unknown; malformedTimes?: number };
   /** Usage the step reports. Absent means the step reports none. */
@@ -49,6 +51,7 @@ function assertInsideWorktree(path: string, what: string): void {
 
 function validate(scenario: WorkerScenario): WorkerScenario {
   for (const edit of scenario.edits ?? []) assertInsideWorktree(edit.path, 'edit path');
+  for (const path of scenario.deletes ?? []) assertInsideWorktree(path, 'delete path');
   if (scenario.readyFile !== undefined) assertInsideWorktree(scenario.readyFile, 'ready file');
   if (scenario.latchFile !== undefined) assertInsideWorktree(scenario.latchFile, 'latch file');
   return scenario;
