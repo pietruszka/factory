@@ -49,6 +49,7 @@ export function createFakeDeps(opts: { start?: number; seed?: number } = {}): Fa
       return `${prefix}_${String(count).padStart(4, '0')}`;
     },
     random,
+    toIso: (ms) => new Date(ms).toISOString(),
     advance: (ms) => {
       const target = current + ms;
       for (;;) {
