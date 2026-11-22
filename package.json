@@ -2,12 +2,17 @@
   "name": "factory",
   "private": true,
   "description": "Factory source code and documentation scripts.",
+  "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "factory": "dist/src/cli/main.js"
+  },
   "scripts": {
     "dev:init": "tsx src/dev/dev-init.ts",
     "probe": "tsx src/probe/probe.ts",
     "preflight": "tsx src/preflight/models.ts",
     "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src",
     "test": "vitest run",
     "test:l3": "tsx scripts/run-layer.ts",

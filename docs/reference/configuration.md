@@ -18,7 +18,7 @@ The config is TypeScript, imported through `defineConfig` from `vitepress`, then
 | Option | Value | Why |
 | --- | --- | --- |
 | `title` | `factory` | Browser title and nav label. Matches the repository name. |
-| `description` | See the config file | Used in the page meta description. States that there is no application source. |
+| `description` | See the config file | Used in the page meta description. Describes the factory command line tool, the site and Pages publishing. |
 | `lang` | `en-US` | Pages are written in English. |
 | `base` | `/factory/` | GitHub Pages project site. Must start and end with `/`. |
 | `lastUpdated` | `true` | Shows the last git commit date on each page. Needs full git history in CI. |
@@ -65,7 +65,7 @@ Internal links are checked by `docs:build`. A link to a page you removed will fa
 
 ## Factory paths
 
-`resolveFactoryPaths(env, opts?)` in `src/platform/paths.ts` is the only place that decides where the factory keeps files (FAC-10, D-39). It reads `HOME` and `FACTORY_HOME` from the `env` it is given. It creates no folder and writes nothing. Code outside `src/platform/paths.ts` must not write home paths as string literals; `npm run lint` rejects string literals that contain a user-home path, a `/home/<name>` path or a literal `~/.factory`.
+`resolveFactoryPaths(env, opts?)` in `src/platform/paths.ts` is the only place that decides where the factory keeps files (D-39). It reads `HOME` and `FACTORY_HOME` from the `env` it is given. It creates no folder and writes nothing. Code outside `src/platform/paths.ts` must not write home paths as string literals; `npm run lint` rejects string literals that contain a user-home path, a `/home/<name>` path or a literal `~/.factory`.
 
 | Field | Default (`FACTORY_HOME` unset) | With `FACTORY_HOME=<fh>` |
 | --- | --- | --- |

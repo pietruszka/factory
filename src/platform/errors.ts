@@ -7,6 +7,8 @@ export interface FactoryErrorInit {
   where: string;
   /** The next action the user can take. */
   next: string;
+  /** The same next action as a runnable command, for the `--json` envelope, for example `factory help`. */
+  nextCommand?: string;
   /** Process exit code: 2 refused or wrong use, 4 internal error. */
   exitCode: number;
 }
@@ -16,6 +18,7 @@ export class FactoryError extends Error {
   readonly code: string;
   readonly where: string;
   readonly next: string;
+  readonly nextCommand: string | undefined;
   readonly exitCode: number;
 
   constructor(init: FactoryErrorInit) {
@@ -24,6 +27,7 @@ export class FactoryError extends Error {
     this.code = init.code;
     this.where = init.where;
     this.next = init.next;
+    this.nextCommand = init.nextCommand;
     this.exitCode = init.exitCode;
   }
 }

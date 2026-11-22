@@ -5,7 +5,7 @@ description: Clone the factory repository and run the documentation site locally
 
 # Getting started
 
-There is no application to install. The commands in `package.json` build and serve this documentation site, and check and test the TypeScript code under `src/` (see [npm scripts](/reference/scripts) and [Testing](/reference/testing)).
+The `factory` CLI is only a shell so far (`version`, `help`); `npm run build` produces it in `dist/`. The commands in `package.json` build and serve this documentation site, and check and test the TypeScript code under `src/` (see [npm scripts](/reference/scripts) and [Testing](/reference/testing)).
 
 ## Access
 
@@ -14,7 +14,7 @@ There is no application to install. The commands in `package.json` build and ser
 ## Prerequisites
 
 - Git
-- Node.js 20 or newer. The Pages workflow pins Node.js 22, which is the version used to verify `docs:build` locally.
+- Node.js 22.13 or newer. This matches the `engines` field in `package.json` and the start-up check in the command line tool. The Pages workflow pins Node.js 22, which is the version used to verify `docs:build` locally.
 - npm, which ships with Node.js.
 
 npm is the package manager because the repository had no lockfile when these docs were added. Dependencies are locked in `package-lock.json`. Do not add a second lockfile.
