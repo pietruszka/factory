@@ -17,6 +17,8 @@ Each run gets one folder for its plan, evidence, saved prompts and report. The c
 
 The worktree a run builds in is a separate folder under the cache root; see [Worktrees](/reference/worktrees).
 
+The run state machine that decides when a run may end as `passed` is described in [Run state](/reference/run-state).
+
 ## Layout
 
 `createRunFolder({ env, repo, ticket, workRepoPath? })` creates, and returns the path of:
