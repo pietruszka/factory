@@ -24,6 +24,7 @@ export default withMermaid(defineConfig({
         text: 'Reference',
         items: [
           { text: 'npm scripts', link: '/reference/scripts' },
+          { text: 'Testing', link: '/reference/testing' },
           { text: 'VitePress config', link: '/reference/configuration' },
           { text: 'GitHub Pages workflow', link: '/reference/pages-workflow' },
           { text: 'CLI facts (FAC-4)', link: '/reference/cli-facts' },
@@ -45,6 +46,7 @@ export default withMermaid(defineConfig({
         text: 'Reference',
         items: [
           { text: 'npm scripts', link: '/reference/scripts' },
+          { text: 'Testing', link: '/reference/testing' },
           { text: 'VitePress config', link: '/reference/configuration' },
           { text: 'GitHub Pages workflow', link: '/reference/pages-workflow' },
           { text: 'CLI facts (FAC-4)', link: '/reference/cli-facts' },

@@ -5,7 +5,7 @@ description: Clone the factory repository and run the documentation site locally
 
 # Getting started
 
-There is no application to install. The only commands in `package.json` build and serve this documentation site.
+There is no application to install. The commands in `package.json` build and serve this documentation site, and check and test the TypeScript code under `src/` (see [npm scripts](/reference/scripts) and [Testing](/reference/testing)).
 
 ## Access
 
