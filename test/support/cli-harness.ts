@@ -10,8 +10,9 @@ export interface CliRun {
   stderr: string;
 }
 
-/** Defaults: Node and git new enough, so only the test's own change decides the outcome. */
+/** Defaults: macOS, Node and git new enough, so only the test's own change decides the outcome. */
 const baseOptions = {
+  os: 'darwin' as const,
   processVersion: 'v24.1.0',
   runGitVersion: async () => 'git version 2.47.1',
   packageVersion: '1.2.3',
