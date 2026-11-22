@@ -19,10 +19,10 @@ function resolveFromHome(inputPath: string, userHome: string): string {
 }
 
 function validateHomePath(resolvedFactoryHome: string, userHome: string, env: NodeJS.ProcessEnv): void {
-  const defaultFactoryHome = resolveComparablePath(resolve(userHome, '.factory'));
+  const defaultFactoryHome = resolve(userHome, '.factory');
   const comparableFactoryHome = resolveComparablePath(resolvedFactoryHome);
-  if (isWithinOrSamePath(defaultFactoryHome, comparableFactoryHome)) {
-    throw new Error('FACTORY_HOME must not be at or inside ~/.factory.');
+  if (isWithinOrSamePath(resolveComparablePath(defaultFactoryHome), comparableFactoryHome)) {
+    throw new Error(`FACTORY_HOME must not be at or inside the default factory home: ${defaultFactoryHome}`);
   }
 
   assertNotPrivatePath(resolvedFactoryHome, resolvedFactoryHome, env);

@@ -5,10 +5,18 @@ description: The only npm scripts in the factory repository.
 
 # npm scripts
 
-`package.json` defines three scripts. There is no `start`, `build`, `test`, or `lint` script, because there is no application.
+`package.json` defines these scripts. There is no `start` script.
 
 | Script | Command | Purpose |
 | --- | --- | --- |
+| `typecheck` | `tsc --noEmit` | Strict TypeScript check of `src/`, `test/` and `scripts/` |
+| `build` | `tsc -p tsconfig.build.json` | Compiles `src/` to `dist/` (git-ignored); `dist/src/cli/main.js` is the `factory` bin |
+| `lint` | `eslint src` | ESLint over `src/`: clock and randomness ban (P-14), no hard-coded home paths (NFR-33) |
+| `test` | `vitest run` | All tests |
+| `test:l3` | `tsx scripts/run-layer.ts` | Only the `test/l3/` folder, with the time printed and a 120 s budget |
+| `dev:init` | `tsx src/dev/dev-init.ts` | Creates a throwaway factory home |
+| `probe` | `tsx src/probe/probe.ts` | Live CLI probe (needs `FACTORY_LIVE`) |
+| `preflight` | `tsx src/preflight/models.ts` | Model preflight |
 | `docs:dev` | `vitepress dev docs` | Local dev server with reload |
 | `docs:build` | `vitepress build docs` | Production static build |
 | `docs:preview` | `vitepress preview docs` | Serve the production build locally |
@@ -16,10 +24,29 @@ description: The only npm scripts in the factory repository.
 Run them with npm from the repository root:
 
 ```sh
-npm run docs:dev
+npm run typecheck
+npm run lint
+npm test
+npm run test:l3
+npm run build
 npm run docs:build
-npm run docs:preview
 ```
+
+## `build`
+
+Compiles `src/` with `tsconfig.build.json` into `dist/`. `package.json` points `bin.factory` at `dist/src/cli/main.js`, so after a build `npm link` (run once, by hand) installs the `factory` command. Pass `-- --outDir <dir>` to build somewhere else. `dist/` is ignored by git, lint and tests. See [The factory command](/reference/cli).
+
+## `lint`
+
+Runs ESLint with `eslint.config.js` over `src/`. It uses the `recommended` rules of ESLint and typescript-eslint, plus two project rules: outside `src/platform/deps.ts`, clock and randomness calls are errors ("use Deps (P-14)"), and string literals that hold a user-home path are errors outside `src/platform/paths.ts`. Formatting is not checked. Details are in [VitePress config](/reference/configuration#factory-paths).
+
+## `test`
+
+Runs every test once with Vitest. Temp homes, the network guard and the L3 folder are described in [Testing](/reference/testing).
+
+## `test:l3`
+
+Runs `scripts/run-layer.ts`, which starts `vitest run test/l3/ --passWithNoTests`, prints `L3 took N s` and exits non-zero when vitest fails or the run is over its budget. The budget is 120 s, printed as `L3 took 121 s, budget 120 s` on breach. While `test/l3/` holds no test, the script passes with zero tests. See [Testing](/reference/testing#l3-tests-and-their-budget).
 
 ## `docs:dev`
 
@@ -58,4 +85,4 @@ The `package.json` script itself does not pin a port. CI does not run preview.
 | `npm ci` | CI, and a clean local install from the lockfile |
 | `npm install` | After you change `package.json` dependencies |
 
-Direct dev dependencies are `vitepress` at `1.6.4`, `mermaid` at `11.17.2`, and `vitepress-plugin-mermaid` at `2.0.17`. `engines.node` asks for Node.js `>=20`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.
+Direct dev dependencies include `vitepress` at `1.6.4`, `mermaid` at `11.17.2`, `vitepress-plugin-mermaid` at `2.0.17`, `vitest`, `tsx`, `typescript`, `eslint` at `9.39.5` and `typescript-eslint`. `engines.node` asks for Node.js `>=22.13`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.

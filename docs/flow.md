@@ -1,6 +1,6 @@
 ---
 title: End-to-end flow
-description: Intended MVP flow of the Personal Software Factory. The CLI is not implemented in this repository.
+description: Intended MVP flow of the Personal Software Factory. Only the CLI shell is implemented so far.
 ---
 
 # End-to-end flow

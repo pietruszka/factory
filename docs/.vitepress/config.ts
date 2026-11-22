@@ -6,7 +6,7 @@ const repository = 'https://github.com/pietruszka/factory'
 export default withMermaid(defineConfig({
   title: 'factory',
   description:
-    'Documentation for the pietruszka/factory repository: the intended factory flow, the files in the tree, the VitePress site, and GitHub Pages publishing. The repository has no application source.',
+    'Documentation for the pietruszka/factory repository: the intended factory flow, the files in the tree, the factory command line tool, the VitePress site, and GitHub Pages publishing.',
   lang: 'en-US',
   base: '/factory/',
   lastUpdated: true,
@@ -24,6 +24,8 @@ export default withMermaid(defineConfig({
         text: 'Reference',
         items: [
           { text: 'npm scripts', link: '/reference/scripts' },
+          { text: 'The factory command', link: '/reference/cli' },
+          { text: 'Testing', link: '/reference/testing' },
           { text: 'VitePress config', link: '/reference/configuration' },
           { text: 'GitHub Pages workflow', link: '/reference/pages-workflow' },
           { text: 'CLI facts (FAC-4)', link: '/reference/cli-facts' },
@@ -45,6 +47,8 @@ export default withMermaid(defineConfig({
         text: 'Reference',
         items: [
           { text: 'npm scripts', link: '/reference/scripts' },
+          { text: 'The factory command', link: '/reference/cli' },
+          { text: 'Testing', link: '/reference/testing' },
           { text: 'VitePress config', link: '/reference/configuration' },
           { text: 'GitHub Pages workflow', link: '/reference/pages-workflow' },
           { text: 'CLI facts (FAC-4)', link: '/reference/cli-facts' },

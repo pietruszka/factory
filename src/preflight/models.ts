@@ -407,7 +407,7 @@ export function parseAgentModelsOutput(output: string): string[] {
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .map((line) => {
-      const match = /^([A-Za-z0-9._\-\[\]=,]+) - .+$/.exec(line);
+      const match = /^([A-Za-z0-9._\-[\]=,]+) - .+$/.exec(line);
       return match?.[1]?.trim();
     })
     .filter((id): id is string => Boolean(id));
@@ -418,7 +418,7 @@ export function parseOpenCodeModelsOutput(output: string): string[] {
   return output
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._\-\[\]=,]+)+$/.test(line));
+    .filter((line) => /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._\-[\]=,]+)+$/.test(line));
 }
 
 function commandForCli(cli: string): string {

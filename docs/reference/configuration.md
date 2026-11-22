@@ -18,7 +18,7 @@ The config is TypeScript, imported through `defineConfig` from `vitepress`, then
 | Option | Value | Why |
 | --- | --- | --- |
 | `title` | `factory` | Browser title and nav label. Matches the repository name. |
-| `description` | See the config file | Used in the page meta description. States that there is no application source. |
+| `description` | See the config file | Used in the page meta description. Describes the factory command line tool, the site and Pages publishing. |
 | `lang` | `en-US` | Pages are written in English. |
 | `base` | `/factory/` | GitHub Pages project site. Must start and end with `/`. |
 | `lastUpdated` | `true` | Shows the last git commit date on each page. Needs full git history in CI. |
@@ -62,3 +62,47 @@ Internal links are checked by `docs:build`. A link to a page you removed will fa
 - A favicon or logo. None was provided with the repository.
 
 `docs/.vitepress/theme/index.ts` extends the default theme only to fill the `not-found` slot. `docs/404.md` sets the document title for a missing route. VitePress does not render that file's body: the app container in `404.html` is empty, and the theme shows its not-found view instead. The slot keeps the default not-found view and adds links to Getting started and Architecture. Other routes use the default theme unchanged.
+
+## Factory paths
+
+`resolveFactoryPaths(env, opts?)` in `src/platform/paths.ts` is the only place that decides where the factory keeps files (D-39). It reads `HOME` and `FACTORY_HOME` from the `env` it is given. It creates no folder and writes nothing. Code outside `src/platform/paths.ts` must not write home paths as string literals; `npm run lint` rejects string literals that contain a user-home path, a `/home/<name>` path or a literal `~/.factory`.
+
+| Field | Default (`FACTORY_HOME` unset) | With `FACTORY_HOME=<fh>` |
+| --- | --- | --- |
+| `home` | `<HOME>/.factory` | `<fh>` |
+| `privateHome` | `<HOME>/.factory-private` | `<fh>-private` (a sibling of `home`, D-15) |
+| `cacheRoot` | `<HOME>/.cache/factory` | `<fh>/cache` |
+| `worktreesRoot` | `<cacheRoot>/worktrees` | `<fh>/cache/worktrees` |
+| `sandboxRoot` | `<cacheRoot>/sandbox` | `<fh>/cache/sandbox` |
+| `runsRoot` | `<home>/runs` | same rule, under `<fh>` |
+| `dbPath` | `<home>/factory.db` | same rule, under `<fh>` |
+| `configPath` | `<home>/config.yaml` | same rule, under `<fh>` |
+| `reposDir` | `<home>/repos` | same rule, under `<fh>` |
+| `baselineReportsDir` | `<home>/sandbox/baseline-reports` | same rule, under `<fh>` |
+
+Rules:
+
+- **Cache folder (D-39).** Worktrees and the sandbox live in the cache root, not under the home. Config, `factory.db`, run folders and baseline reports stay under the home.
+- **`FACTORY_HOME`.** Must be an absolute path. A leading `~/` is expanded against `HOME`. A relative value is refused with code `factory_home_relative`. An empty value counts as unset.
+- **`XDG_CACHE_HOME` is ignored.** The cache root never depends on it.
+- **Protected folders.** `home`, `cacheRoot`, `worktreesRoot` and `sandboxRoot` are each checked. A path at or inside `<HOME>/Documents`, `<HOME>/Desktop` or `<HOME>/Downloads` is refused with code `protected_folder`. The check follows symlinks, so a link outside those folders that points into them is refused too. On macOS the comparison ignores case. `<HOME>/Documentsx` is not a protected folder. The error's `where` is the path as given, and its `next` names `~/.cache/factory`.
+
+### Errors
+
+Path errors are `FactoryError` values (`src/platform/errors.ts`) with `code`, `message` (what), `where`, `next` (the next action) and `exitCode`.
+
+| Code | Exit code | Meaning |
+| --- | --- | --- |
+| `factory_home_relative` | 2 | `FACTORY_HOME` is not an absolute path |
+| `protected_folder` | 2 | A factory folder is inside Documents, Desktop or Downloads |
+| `real_home_in_test` | 4 | A test resolved paths while `HOME` was the real user home (see below) |
+
+### Testing notes
+
+- Every test sets `HOME` to a fresh temp folder (`makeTempHome()` in `test/support/temp-home.ts`) and passes it in `env`.
+- `PathOptions.platform` overrides `process.platform`, so the macOS case rule is testable on any OS. `PathOptions.realHome` overrides the real home the guard compares against.
+- `test/setup/real-home.ts` runs before every test file (see `setupFiles` in `vitest.config.ts`). It stores the real user home under `Symbol.for('factory.realHome')`. When `resolveFactoryPaths` is called with a `HOME` equal to that value, it throws `real_home_in_test`, so a test can never resolve the real `~/.factory`, `~/.factory-private` or `~/.cache/factory`. Outside tests the key is unset and the guard does nothing.
+
+### Clock and randomness
+
+`src/platform/deps.ts` defines `Deps` (`now`, `sleep`, `setTimer`, `clearTimer`, `newId`, `random`) and `createSystemDeps()`. Outside `src/platform/deps.ts`, `npm run lint` bans `Date.now`, `new Date` in any form, `setTimeout`, `setInterval`, `Math.random` and `crypto.randomUUID`, with the message "use Deps (P-14)". Files under `test/` are exempt. `test/support/fake-deps.ts` gives a fake clock with `advance(ms)`, sequential ids (`r_0001`, `r_0002`) and a seeded `random()`.

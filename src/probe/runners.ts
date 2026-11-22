@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, relative, resolve, isAbsolute } from 'node:path';
 
+import { createSystemDeps, type Deps } from '../platform/deps.js';
 import { PROBE_PROMPT } from './prompt.js';
 
 export type ProbeCliName = 'cursor-agent' | 'opencode';
@@ -207,7 +208,11 @@ function refusalOutcome(errorMessage: string, cliVersion = 'unknown'): ProbeRunn
   return { stdout: '', stderr: '', exitCode: null, durationMs: 0, signal: null, cliVersion, errorMessage };
 }
 
-export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): ProbeRunnerOutcome {
+export function runProbeCli(
+  spec: ProbeRunnerSpec,
+  env: NodeJS.ProcessEnv,
+  deps: Deps = createSystemDeps(),
+): ProbeRunnerOutcome {
   const forbidden = FORBIDDEN_CLI_FLAGS[spec.cli].find((flag) => spec.args.includes(flag));
   if (forbidden) {
     return refusalOutcome(`forbidden flag: ${forbidden}`);
@@ -251,7 +256,7 @@ export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): Prob
     return refusalOutcome(warmupError, version.cliVersion);
   }
 
-  const startedAt = Date.now();
+  const startedAt = deps.now();
   const result = spawnSync(spec.command, spec.args, {
     cwd: spec.cwd,
     // OpenCode's cursor-acp/ bridge resolves relative tool paths against PWD, not the process cwd.
@@ -261,7 +266,7 @@ export function runProbeCli(spec: ProbeRunnerSpec, env: NodeJS.ProcessEnv): Prob
     timeout: spec.timeoutMs,
     maxBuffer: TEN_MB,
   });
-  const endedAt = Date.now();
+  const endedAt = deps.now();
 
   return {
     stdout: result.stdout ?? '',
