@@ -25,11 +25,14 @@ export interface Spawner {
   spawn(request: SpawnRequest): Promise<SpawnedProcess>;
   /** Kills children first, then the parent, only when the pid still matches the command. */
   killTree(pid: number, command: string): Promise<'killed' | 'pid_reused' | 'gone'>;
+  /** Polite stop: SIGTERM, with the same children-first walk and pid check as `killTree`. */
+  termTree(pid: number, command: string): Promise<'killed' | 'pid_reused' | 'gone'>;
 }
 
 export interface FakeSpawner extends Spawner {
   readonly requests: readonly SpawnRequest[];
   readonly kills: ReadonlyArray<{ pid: number; command: string }>;
+  readonly terms: ReadonlyArray<{ pid: number; command: string }>;
 }
 
 /** The command text recorded in the process table: the program and its arguments. */
@@ -48,10 +51,12 @@ export interface FakeSpawnReply {
 export function createFakeSpawner(options: { reply?: (request: SpawnRequest) => FakeSpawnReply } = {}): FakeSpawner {
   const requests: SpawnRequest[] = [];
   const kills: Array<{ pid: number; command: string }> = [];
+  const terms: Array<{ pid: number; command: string }> = [];
   let nextPid = 1000;
   return {
     requests,
     kills,
+    terms,
     spawn: async (request) => {
       requests.push(request);
       const reply = options.reply?.(request) ?? {};
@@ -63,6 +68,10 @@ export function createFakeSpawner(options: { reply?: (request: SpawnRequest) => 
     },
     killTree: async (pid, command) => {
       kills.push({ pid, command });
+      return 'killed';
+    },
+    termTree: async (pid, command) => {
+      terms.push({ pid, command });
       return 'killed';
     },
   };
@@ -91,17 +100,17 @@ const isAlive = (pid: number): boolean => {
   }
 };
 
-const signalIgnoringGone = (pid: number): void => {
+const signalIgnoringGone = (pid: number, signal: 'SIGTERM' | 'SIGKILL'): void => {
   try {
-    process.kill(pid, 'SIGKILL');
+    process.kill(pid, signal);
   } catch {
     // Already exited between listing and killing.
   }
 };
 
 /**
- * macOS Spawner. Each child leads its own process group. `killTree` sends SIGKILL to the
- * descendants first, then the parent, and only when the pid still runs the recorded command.
+ * macOS Spawner. Each child leads its own process group. `killTree` sends SIGKILL and `termTree`
+ * SIGTERM to the descendants first, then the parent, and only when the pid still runs the recorded command.
  */
 export function createMacosSpawner(options: {
   processTable: ProcessTable;
@@ -110,6 +119,18 @@ export function createMacosSpawner(options: {
 }): Spawner {
   const { processTable, deps } = options;
   const run = options.run ?? runCommand;
+  const signalTree = async (
+    signal: 'SIGTERM' | 'SIGKILL',
+    pid: number,
+    command: string,
+  ): Promise<'killed' | 'pid_reused' | 'gone'> => {
+    if (!isAlive(pid)) return 'gone';
+    if (!(await processTable.stillMatches(pid, command))) return 'pid_reused';
+    const table = await run('ps', ['-A', '-o', 'pid=,ppid=']);
+    for (const descendant of descendantsDeepestFirst(table.stdout, pid)) signalIgnoringGone(descendant, signal);
+    signalIgnoringGone(pid, signal);
+    return 'killed';
+  };
   return {
     spawn: (request) =>
       new Promise((resolve, reject) => {
@@ -148,13 +169,7 @@ export function createMacosSpawner(options: {
           });
         });
       }),
-    killTree: async (pid, command) => {
-      if (!isAlive(pid)) return 'gone';
-      if (!(await processTable.stillMatches(pid, command))) return 'pid_reused';
-      const table = await run('ps', ['-A', '-o', 'pid=,ppid=']);
-      for (const descendant of descendantsDeepestFirst(table.stdout, pid)) signalIgnoringGone(descendant);
-      signalIgnoringGone(pid);
-      return 'killed';
-    },
+    killTree: (pid, command) => signalTree('SIGKILL', pid, command),
+    termTree: (pid, command) => signalTree('SIGTERM', pid, command),
   };
 }

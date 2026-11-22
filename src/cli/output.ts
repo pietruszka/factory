@@ -23,6 +23,7 @@ function humanText(envelope: CliOutput): string {
   const first = envelope.errors[0];
   if (first?.where) lines.push(`Where: ${first.where}`);
   if (first?.next) lines.push(`Next: ${first.next}`);
+  if (envelope.ok && envelope.next_command) lines.push(`Next: ${envelope.next_command}`);
   return `${lines.join('\n')}\n`;
 }
 

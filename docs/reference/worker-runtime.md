@@ -64,7 +64,7 @@ OpenCode 2.x `--auto` auto-approves permissions. No OpenCode start passes it, fo
 
 ### Timeout and kill
 
-The step is killed with `Spawner.killTree` when `timeoutMs` passes (`exitReason: 'timeout'`) or when `kill()` is called (`'killed'`). `killTree` is always SIGKILL; a child that ignores SIGTERM is still killed.
+The step is killed with `Spawner.killTree` when `timeoutMs` passes (`exitReason: 'timeout'`) or when `kill()` is called (`'killed'`). `killTree` is always SIGKILL; a child that ignores SIGTERM is still killed. The polite stop and the wait-then-escalate path belong to [`factory kill`](/reference/kill), not to the runtime.
 
 ## Process rows
 
