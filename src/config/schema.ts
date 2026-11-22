@@ -7,6 +7,8 @@ import { normaliseOrigin } from './origin.js';
 
 export const FLOWS = ['A', 'E', 'F', 'H'] as const;
 export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
+/** `linked`: a git worktree of the work repo. `standalone`: a local clone. Default `linked`. */
+export const WORKTREE_MODES = ['linked', 'standalone'] as const;
 
 const nonEmpty = z.string().min(1);
 const globs = z.array(nonEmpty);
@@ -88,6 +90,7 @@ const CONFIG_SHAPE = {
       viewports: z.array(ViewportSchema),
     })
     .optional(),
+  worktree: z.strictObject({ mode: z.enum(WORKTREE_MODES).optional() }).optional(),
   gates_cwd: relativeInsideRepo,
   timing_sensitive_repeats: z.int().min(1),
   timing_sensitive_globs: globs,

@@ -15,6 +15,8 @@ Each run gets one folder for its plan, evidence, saved prompts and report. The c
 - `repo`, `ticket` and a prompt `step` are slugs: non-empty, matching `^[A-Za-z0-9._-]+$`, and not `.` or `..`. A slash, `~`, a space or an absolute path is refused.
 - `runFolderPath(env, repo, ticket)` is pure: it returns the path and creates nothing.
 
+The worktree a run builds in is a separate folder under the cache root; see [Worktrees](/reference/worktrees).
+
 ## Layout
 
 `createRunFolder({ env, repo, ticket, workRepoPath? })` creates, and returns the path of:
@@ -90,4 +92,4 @@ Each is a `FactoryError` with `where` and `next`.
 
 ## Not in this ticket
 
-A factory command, the inspector, worktree creation, the run state machine and marking a run `passed`, writing `ticket.json`, `plan.md` or `plan.approved`, opening a draft PR, and retention of old prompts.
+A factory command, the inspector, worktree creation (see [Worktrees](/reference/worktrees)), the run state machine and marking a run `passed`, writing `ticket.json`, `plan.md` or `plan.approved`, opening a draft PR, and retention of old prompts.
