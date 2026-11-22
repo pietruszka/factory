@@ -10,12 +10,17 @@ export function runFolderInvalid(message: string, where: string, next: string): 
   return new FactoryError({ code: 'run_folder_invalid', message, where, next, exitCode: 2 });
 }
 
+/** Whether `value` is a single slug segment: letters, digits, ".", "_" or "-", and not "." or "..". */
+export function isSlug(value: string): boolean {
+  return SLUG.test(value) && value !== '.' && value !== '..';
+}
+
 /**
  * Refuses a value that is not a single slug segment: empty, with a slash, a leading `~`, a space,
  * or `.` / `..`. `kind` names the field in the message, for example `repo`, `ticket` or `step`.
  */
 export function assertSlug(kind: string, value: string): void {
-  if (!SLUG.test(value) || value === '.' || value === '..') {
+  if (!isSlug(value)) {
     throw runFolderInvalid(
       `The ${kind} "${value}" is not a valid name. Use letters, digits, ".", "_" or "-" only, and not "." or "..".`,
       kind,

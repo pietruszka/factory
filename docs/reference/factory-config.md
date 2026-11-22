@@ -50,6 +50,7 @@ A file that holds only a `models:` section, as `dev:init` writes it, is valid. U
 | `role_write_globs.<role>` | list of strings | `{}` | Roles are `planner`, `builder`, `reviewer`, `visionJudge`. |
 | `risk_tiers.<tier>` | list of strings | `{}` | |
 | `ui.dev_server`, `ui.url`, `ui.port`, `ui.viewports` | string, http(s) URL, integer 1..65535, list of `{ name, width, height }` | none | `ui` is optional. When set, all four keys are required. |
+| `worktree.mode` | `linked` or `standalone` | `linked` | Optional. How the run's worktree is made; see [Worktrees](/reference/worktrees). |
 | `gates_cwd` | relative path, no `..` | `.` | |
 | `timing_sensitive_repeats` | integer >= 1 | `3` | |
 | `timing_sensitive_globs` | list of strings | `[]` | |
