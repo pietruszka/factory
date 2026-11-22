@@ -102,8 +102,12 @@ function usdFromTokens(tokens: number, per1M: number): number {
   return (tokens / 1_000_000) * per1M;
 }
 
-export function estimateCost(usage: unknown, model: string): CostEstimate {
-  const pricing = PRICE_TABLE[model];
+/** The four rates of a model, as in the built-in table and in the config `rate_table`. */
+export type Rates = Pick<ModelPrice, 'inputPer1M' | 'outputPer1M' | 'cacheReadPer1M' | 'cacheWritePer1M'>;
+
+/** Prices reported tokens with `table` (the built-in table by default; the core wrapper passes the config `rate_table`). */
+export function estimateCost(usage: unknown, model: string, table: Readonly<Record<string, Rates>> = PRICE_TABLE): CostEstimate {
+  const pricing = table[model];
   if (!pricing) {
     return { kind: 'unknown', model };
   }

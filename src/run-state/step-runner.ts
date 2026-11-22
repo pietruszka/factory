@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { enforceCaps, recordUsage, remainingMs } from '../cost/enforce.js';
+import type { CostOptions } from '../cost/types.js';
 import type { StepExitReason, StepRequest, StepResult, WorkerRuntime } from '../worker-runtime/types.js';
 import { checkAfter, markBefore, type ScopedAttempt } from '../write-scope/enforce.js';
 import type { WriteScopeOptions } from '../write-scope/types.js';
@@ -27,6 +29,8 @@ export interface RunStepsOptions extends RunStateContext {
   steps: readonly StepSpec[];
   /** When present, each step is snapshotted before it starts and checked after it returns. */
   writeScope?: WriteScopeOptions;
+  /** When present, usage is normalised and the run's caps are enforced after each step. */
+  cost?: CostOptions;
 }
 
 export interface RunStepsOutcome {
@@ -46,10 +50,11 @@ const STOP_FOR_EXIT_REASON: Readonly<Record<string, RunStatus>> = {
   budget: 'budget',
   killed: 'killed',
   breach: 'breach',
+  cost_missing: 'cost_missing',
 };
 
 /** A worker result, or the same result ended as a write-scope breach. */
-type AttemptResult = Omit<StepResult, 'exitReason'> & { exitReason: StepExitReason | 'breach' };
+type AttemptResult = Omit<StepResult, 'exitReason'> & { exitReason: StepExitReason | 'breach' | 'cost_missing' };
 
 function inputHash(spec: StepSpec, prompt: string): string {
   const input = JSON.stringify([spec.role, spec.model, prompt, spec.readOnly ?? false, spec.outputSchema ?? null]);
@@ -66,6 +71,21 @@ function lastAttempt({ reader }: RunStateContext, runId: string, stepId: string)
 
 function retryPrompt(spec: StepSpec, parseError: string | undefined): string {
   return `${spec.prompt}\n\nYour previous reply could not be parsed: ${parseError ?? 'invalid structured output'}\nReply again with valid JSON only.`;
+}
+
+/** The step's timeout, tightened to the wall-clock left in the run when caps are enforced. */
+function stepTimeout(options: RunStepsOptions, spec: StepSpec): number {
+  const own = spec.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  return options.cost === undefined ? own : Math.min(own, remainingMs(options, options.runId, options.cost));
+}
+
+/** Records the usage of a finished attempt. A successful step that lacks an expected usage field ends as `cost_missing`. */
+function withUsage(options: RunStepsOptions, spec: StepSpec, attempt: number, result: AttemptResult): AttemptResult {
+  if (options.cost === undefined) {
+    return result;
+  }
+  const step = { runId: options.runId, stepId: spec.stepId, attempt, role: spec.role, model: spec.model };
+  return recordUsage(options, options.cost, step, result) ? { ...result, exitReason: 'cost_missing' } : result;
 }
 
 /** Writes a `running` checkpoint, starts the step, and returns its result. A thrown start marks the step failed. */
@@ -97,7 +117,7 @@ async function startAttempt(
     readOnly: spec.readOnly ?? false,
     ...(resumeSessionId === undefined ? {} : { resumeSessionId }),
     ...(spec.outputSchema === undefined ? {} : { outputSchema: spec.outputSchema }),
-    timeoutMs: spec.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    timeoutMs: stepTimeout(options, spec),
     env: {},
   };
   const scoped: ScopedAttempt | undefined =
@@ -108,7 +128,9 @@ async function startAttempt(
     const mark = scoped === undefined ? undefined : markBefore(scoped);
     const result = await runtime.start(request).result;
     // A breach outranks every other exit reason: the step is recorded as failed and the run stops.
-    return scoped !== undefined && mark !== undefined && checkAfter(scoped, mark) ? { ...result, exitReason: 'breach' } : result;
+    const checked: AttemptResult =
+      scoped !== undefined && mark !== undefined && checkAfter(scoped, mark) ? { ...result, exitReason: 'breach' } : result;
+    return withUsage(options, spec, attempt, checked);
   } catch (error) {
     log.upsertStep({ ...base, status: 'failed', exit_reason: 'error', ended_at: isoNow(options) });
     throw error;
@@ -159,6 +181,12 @@ async function runStep(options: RunStepsOptions, spec: StepSpec): Promise<RunSta
  * session resumed; a second failure ends the step as `schema_invalid`. A step that does not finish moves
  * the run to a stop status (`timeout`, `budget` and `breach` map to their own, anything else to `needs_human`).
  *
+ * With `cost`, the usage of every attempt is written as a `usage` event flagged `reported` or `estimated`, and a
+ * successful step that lacks an expected usage field ends as `cost_missing` (see `src/cost`). The run's caps are
+ * checked before and after each step: reaching `cap_usd_effective` stops the run as `budget`, reaching the flow's
+ * minutes as `timeout`, with the worktree kept and the next action recorded. Each step's timeout is tightened to
+ * the wall-clock left in the run.
+ *
  * With `writeScope`, every started attempt is snapshotted before the worker and checked after it returns. A
  * path the step's role may not change is restored, and the step ends as `breach` (see `src/write-scope`).
  */
@@ -172,6 +200,12 @@ export async function runSteps(options: RunStepsOptions): Promise<RunStepsOutcom
       skipped.push(spec.stepId);
       continue;
     }
+    // A run that is already at a cap does not start another step.
+    const capped = options.cost === undefined ? undefined : enforceCaps(options, runId, options.cost);
+    if (capped !== undefined) {
+      transition(options, runId, capped);
+      break;
+    }
     ran.push(spec.stepId);
     let stop: RunStatus | undefined;
     try {
@@ -179,6 +213,9 @@ export async function runSteps(options: RunStepsOptions): Promise<RunStepsOutcom
     } catch (error) {
       transition(options, runId, 'needs_human');
       throw error;
+    }
+    if (options.cost !== undefined && (stop === undefined || stop === 'timeout')) {
+      stop = enforceCaps(options, runId, options.cost, stop) ?? stop;
     }
     if (stop !== undefined) {
       transition(options, runId, stop);

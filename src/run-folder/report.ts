@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 
 import { MODEL_ROLES } from '../config/models.js';
+import { formatUsd } from '../cost/format.js';
 import type { EventLogReadOnly } from '../event-log/open.js';
 import { FactoryError } from '../platform/errors.js';
 import { isWithinOrSamePath, resolveComparablePath } from '../platform/path-helpers.js';
@@ -126,13 +127,6 @@ function modelLines(log: EventLogReadOnly, runId: string): string[] {
   ];
 }
 
-/** Two decimals at least, up to six, without trailing zeros: 1.5 is `1.50`, 0.0042 stays `0.0042`. */
-function formatUsd(value: number): string {
-  const trimmed = value.toFixed(6).replace(/0+$/, '');
-  const [whole = '0', fraction = ''] = trimmed.split('.');
-  return `$${whole}.${fraction.padEnd(2, '0')}`;
-}
-
 /** Cost per usage source and a total when there is more than one; "missing" when none was recorded. */
 function costLines(log: EventLogReadOnly, runId: string): string[] {
   const rows = log.query(
@@ -150,6 +144,17 @@ function costLines(log: EventLogReadOnly, runId: string): string[] {
   return bySource.length > 1
     ? [...lines, `- **Cost (total):** ${formatUsd(bySource.reduce((sum, { total }) => sum + total, 0))}`]
     : lines;
+}
+
+/** The recorded next action of a stop that is still the run's status (cap reached, cost missing); empty otherwise. */
+function nextActionLines(log: EventLogReadOnly, runId: string): string[] {
+  const row = log.query(
+    `SELECT e.payload_json FROM events e JOIN runs r ON r.run_id = e.run_id
+     WHERE e.run_id = ? AND e.type = 'run_stop' AND e.status = r.status ORDER BY e.id DESC LIMIT 1`,
+    runId,
+  )[0];
+  const next = typeof row?.payload_json === 'string' ? (JSON.parse(row.payload_json) as { next?: unknown }).next : undefined;
+  return typeof next === 'string' ? ['## Next action', '', next, ''] : [];
 }
 
 function formatDuration(startedAt: string | undefined, endedAt: string | undefined): string {
@@ -217,6 +222,7 @@ function renderReport(run: Row, flow: string, folder: string, worktreePath: stri
     '',
     ...artifactLines(folder, flow),
     '',
+    ...nextActionLines(log, runId),
   ].join('\n');
 }
 

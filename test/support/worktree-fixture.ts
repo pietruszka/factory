@@ -33,7 +33,7 @@ export interface WorktreeFixture {
  * clock and a disposable work repo at `<temp>/work/example-frontend`. Call `cleanupEventLogTest`
  * from afterEach.
  */
-export function worktreeFixture(opts: { configMode?: WorktreeMode } = {}): WorktreeFixture {
+export function worktreeFixture(opts: { configMode?: WorktreeMode; run?: Partial<RunInput> } = {}): WorktreeFixture {
   const sb = eventLogSandbox();
   const repo = makeWorkRepo(join(sb.tmp, 'work', 'example-frontend'));
 
@@ -64,7 +64,7 @@ export function worktreeFixture(opts: { configMode?: WorktreeMode } = {}): Workt
   const addRun = (overrides: Partial<RunInput> = {}): void => {
     log.insertRun(runInput({ base_commit: repo.baseCommit, ...overrides }));
   };
-  addRun();
+  addRun(opts.run);
 
   return {
     sb,

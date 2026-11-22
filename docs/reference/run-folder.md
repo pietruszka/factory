@@ -57,6 +57,7 @@ The run folder holds no checkout. No writer copies a worktree, a `.git` director
 | `## Cost and duration` | `Cost (reported)` and `Cost (estimated)` from `events.cost_usd` grouped by `usage_source`; `Cost (total)` when there is more than one group. When no cost was recorded the line is `Cost: missing`; the report never writes a zero total. `Duration` from `runs.started_at` to `runs.ended_at`, for example `12m 30s`. |
 | `## Workspace` | `Worktree` (the path passed in), `Base commit` (from `runs.base_commit`) |
 | `## Artifacts` | One line per required path, `present` or `missing`, then one line per optional path that exists |
+| `## Next action` | Only when the run's current status is a cap or `cost_missing` stop that was recorded: what was spent or elapsed and what to do next. See [Caps and cost](/reference/caps). |
 
 Later tickets add sections; they do not rename these fields.
 

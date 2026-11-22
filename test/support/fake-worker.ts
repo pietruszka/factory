@@ -17,6 +17,8 @@ export interface WorkerScenario {
   final?: { json: unknown; malformedTimes?: number };
   /** Usage the step reports. Absent means the step reports none. */
   usage?: { inputTokens: number; outputTokens: number };
+  /** A dollar cost the step reports next to its usage. Absent means the step reports none; 0 is a reported zero. */
+  costUsd?: number;
   sessionId?: string;
   /** Exit code of the child. */
   exitCode?: number;
@@ -66,6 +68,7 @@ interface Envelope {
   text?: string;
   sessionId?: string;
   usage?: unknown;
+  costUsd?: number;
 }
 
 function readEnvelope(stdout: string): Envelope {
@@ -97,6 +100,7 @@ export function createFakeWorkerRuntime(options: FakeWorkerOptions): WorkerRunti
           rawText: envelope.text ?? '',
           ...(envelope.sessionId === undefined ? {} : { sessionId: envelope.sessionId }),
           ...(envelope.usage === undefined ? {} : { usage: envelope.usage }),
+          ...(envelope.costUsd === undefined ? {} : { costUsd: envelope.costUsd }),
           durationMs: output.durationMs,
           processes: output.processes,
         };

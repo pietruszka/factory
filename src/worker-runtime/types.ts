@@ -37,6 +37,8 @@ export interface StepResult {
   parseError?: string;
   sessionId?: string;
   usage?: unknown;
+  /** A numeric dollar cost the CLI reported itself. Absent when the CLI reported none. */
+  costUsd?: number;
   durationMs: number;
   processes: readonly StepProcess[];
 }
