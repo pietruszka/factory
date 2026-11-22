@@ -200,6 +200,21 @@ describe('run report', () => {
       expect([path, /missing/i.test(artifactLine(text, path) ?? '')]).toEqual([path, false]);
     }
   });
+
+  test('empty present optional directories such as context/, evidence/gates/ and verify/ are listed in the Artifacts section', () => {
+    const fx = fixture({ flow: 'A' });
+    const folder = createRunFolder({ env: fx.sb.env, repo: 'example-frontend', ticket: 'FE-123' });
+    put(folder, 'plan.md');
+    put(folder, 'plan.approved');
+    put(folder, 'evidence/diff.patch');
+
+    const text = report({ ...fx, folder });
+
+    for (const path of ['context/', 'evidence/gates/', 'verify/']) {
+      expect(artifactLine(text, path)).toBe(`- \`${path}\` (optional): present`);
+    }
+    expect(artifactLine(text, 'prompts/')).toBeUndefined();
+  });
 });
 
 describe('required artifacts', () => {

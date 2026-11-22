@@ -30,6 +30,8 @@ const REQUIRED_ARTIFACTS: ReadonlyMap<string, readonly string[]> = new Map<strin
 
 /** Known files that are listed when present and not required. */
 const OPTIONAL_FILES = ['ticket.json', 'decisions.md', 'plan.md', 'plan.approved', 'evidence/diff.patch', 'review.md'];
+/** Optional directories listed when present, even if empty. */
+const OPTIONAL_DIRECTORIES = ['context', 'evidence/gates', 'verify'];
 /** Folders whose files are all listed when present. */
 const OPTIONAL_FOLDERS = ['context', 'evidence/gates', 'verify', 'prompts'];
 
@@ -41,6 +43,14 @@ type Row = Record<string, unknown>;
 function isFile(path: string): boolean {
   try {
     return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function isDir(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
   } catch {
     return false;
   }
@@ -165,6 +175,7 @@ function artifactLines(folder: string, flow: string): string[] {
   );
   const optional = [
     ...OPTIONAL_FILES.filter((path) => !required.includes(path) && isFile(join(folder, path))),
+    ...OPTIONAL_DIRECTORIES.filter((path) => isDir(join(folder, path))).map((path) => `${path}/`),
     ...OPTIONAL_FOLDERS.flatMap((path) => listFiles(folder, path)),
   ].sort();
   return [...requiredLines, ...optional.map((path) => `- \`${path}\` (optional): present`)];

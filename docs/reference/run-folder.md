@@ -65,7 +65,7 @@ The worktree path must be absolute and strictly inside the cache root, symlinks 
 | A, E, H | `plan.md`, `plan.approved`, `evidence/diff.patch`, `report.md` |
 | F | `review.md`, `report.md` |
 
-Optional, listed when present and never required in this ticket: `ticket.json`, `decisions.md`, files under `context/`, `evidence/gates/`, `verify/` and `prompts/`, and the other flow's files.
+Optional, listed when present and never required in this ticket: `ticket.json`, `decisions.md`, the `context/`, `evidence/gates/` and `verify/` directories (even when empty), files under those folders and `prompts/`, and the other flow's files.
 
 `canPassFromReport(runFolder)` takes only the run folder. It is true only when `report.md` records a flow with a required list, lists every required path of that flow as `present`, and each of those files still exists. A missing or unreadable report, an unknown flow, a stale `missing` line or a deleted file gives false. This module has no function that sets `runs.status` to `passed`; the state machine must refuse `passed` when `canPassFromReport` is false.
 
