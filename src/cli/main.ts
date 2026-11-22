@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { FactoryError } from '../platform/errors.js';
+import { assertSupportedPlatform } from '../ports/platform.js';
 import { EXIT_CODES } from './exit-codes.js';
 import { printOutput, type CliIo } from './output.js';
 import {
@@ -29,6 +30,8 @@ export interface RunCliOptions extends CliIo {
   packageVersion: string;
   /** Extra commands, merged over the built-in ones. Tests add commands here. */
   commands?: CommandTable;
+  /** The operating system, for example `darwin`. Tests set it to check the refusal on other systems. */
+  os?: NodeJS.Platform;
 }
 
 const failure = (command: string, error: unknown): CliOutput => {
@@ -62,6 +65,7 @@ export async function runCli(opts: RunCliOptions): Promise<number> {
   const commands = { ...defaultCommands, ...opts.commands };
   let command = '';
   try {
+    assertSupportedPlatform(opts.os ?? process.platform);
     const invocation = parseInvocation(opts.argv);
     command = invocation.command;
     const { rest } = invocation;

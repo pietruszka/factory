@@ -78,6 +78,8 @@ secrets:
 
 Each entry is exactly one of `env` (an environment variable name) or `keychain` (an item name).
 
+The values are read only by `resolveSecret`; see [Ports](/reference/ports#secrets).
+
 ## Merge
 
 Order: defaults, then the global file, then the repo file, then validation, then the hash.
