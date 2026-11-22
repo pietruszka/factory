@@ -11,6 +11,8 @@ export interface Deps {
   clearTimer(handle: unknown): void;
   newId(prefix: string): string;
   random(): number;
+  /** ISO-8601 UTC text for a millisecond timestamp, for example from `now()`. */
+  toIso(ms: number): string;
 }
 
 /** The only place allowed to read the real clock, timers and randomness (see eslint.config.js). */
@@ -24,5 +26,6 @@ export function createSystemDeps(): Deps {
     clearTimer: (handle) => clearTimeout(handle as NodeJS.Timeout),
     newId: (prefix) => `${prefix}_${randomUUID()}`,
     random: () => Math.random(),
+    toIso: (ms) => new Date(ms).toISOString(),
   };
 }
