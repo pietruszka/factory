@@ -11,8 +11,10 @@ import {
   type ModelRole,
   type ModelsSection,
 } from '../config/models.js';
+import { readYamlConfig } from '../config/yaml.js';
 import { resolveFactoryHome } from '../dev/home.js';
 import { runAsMain } from '../dev/run-as-main.js';
+import { FactoryError } from '../platform/errors.js';
 
 export type HomeModelsConfig = ModelsSection;
 export type ModelCatalogByCli = Record<string, string[]>;
@@ -37,109 +39,12 @@ export interface ModelsPreflightError {
   message: string;
 }
 
-interface IndentFrame {
-  indent: number;
-  node: Record<string, unknown>;
-}
-
 const TEN_MB = 10 * 1024 * 1024;
-const RESERVED_YAML_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const USAGE_REPORTING_CLIS = new Set(['cursor-agent', 'opencode']);
 
-function createYamlNode(): Record<string, unknown> {
-  return Object.create(null) as Record<string, unknown>;
-}
-
-function parseScalar(value: string, lineNumber: number): unknown {
-  if (value === 'null') {
-    return null;
-  }
-  if (value === 'true') {
-    return true;
-  }
-  if (value === 'false') {
-    return false;
-  }
-  if (/^-?\d+$/.test(value)) {
-    return Number(value);
-  }
-  const startsWithQuote = value.startsWith('"');
-  const endsWithQuote = value.endsWith('"');
-  if (startsWithQuote || endsWithQuote) {
-    if (!(startsWithQuote && endsWithQuote)) {
-      throw new Error(`line ${lineNumber}: malformed quoted string.`);
-    }
-    try {
-      return JSON.parse(value);
-    } catch {
-      throw new Error(`line ${lineNumber}: malformed quoted string.`);
-    }
-  }
-  return value;
-}
-
-function parseSimpleYaml(input: string): Record<string, unknown> {
-  const root = createYamlNode();
-  const stack: IndentFrame[] = [{ indent: -1, node: root }];
-  const lines = input.split('\n');
-
-  for (const [index, rawLine] of lines.entries()) {
-    const lineNumber = index + 1;
-    if (!rawLine.trim() || rawLine.trim().startsWith('#')) {
-      continue;
-    }
-
-    if (rawLine.includes('\t')) {
-      throw new Error(`line ${lineNumber}: tabs are not allowed in indentation.`);
-    }
-
-    const indent = rawLine.match(/^ */)?.[0].length ?? 0;
-    const line = rawLine.trim();
-    const match = /^([A-Za-z0-9_-]+):(?:\s+(.*))?$/.exec(line);
-    if (!match) {
-      throw new Error(`line ${lineNumber}: invalid YAML line.`);
-    }
-
-    while (stack.length > 1 && indent <= stack[stack.length - 1].indent) {
-      stack.pop();
-    }
-    const parent = stack[stack.length - 1]?.node;
-    if (!parent) {
-      throw new Error(`line ${lineNumber}: invalid YAML indentation.`);
-    }
-
-    const key = match[1];
-    if (RESERVED_YAML_KEYS.has(key)) {
-      throw new Error(`line ${lineNumber}: reserved key "${key}" is not allowed.`);
-    }
-    if (Object.prototype.hasOwnProperty.call(parent, key)) {
-      throw new Error(`line ${lineNumber}: duplicate key "${key}".`);
-    }
-
-    const hasValue = match[2] !== undefined && match[2] !== '';
-    if (!hasValue) {
-      const child = createYamlNode();
-      parent[key] = child;
-      stack.push({ indent, node: child });
-      continue;
-    }
-
-    parent[key] = parseScalar(match[2] as string, lineNumber);
-  }
-
-  return root;
-}
-
 export function readModelsConfigFromYaml(contents: string): HomeModelsConfig {
-  let parsedYaml: Record<string, unknown>;
-  try {
-    parsedYaml = parseSimpleYaml(contents);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Invalid models config: ${message}`);
-  }
-
-  if (!Object.prototype.hasOwnProperty.call(parsedYaml, 'models')) {
+  const parsedYaml = readYamlConfig({ file: 'config.yaml', bytes: Buffer.from(contents, 'utf8') }).value;
+  if (typeof parsedYaml !== 'object' || parsedYaml === null || !Object.hasOwn(parsedYaml, 'models')) {
     throw new Error('Invalid models config: missing models section.');
   }
 
@@ -554,7 +459,12 @@ async function runCli(argv: string[], env: NodeJS.ProcessEnv): Promise<void> {
 
 runAsMain(import.meta.url, () => {
   void runCli(process.argv.slice(2), process.env).catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
+    const message =
+      error instanceof FactoryError
+        ? `${error.message} (${error.where}). ${error.next}`
+        : error instanceof Error
+          ? error.message
+          : String(error);
     process.stderr.write(`${message}\n`);
     process.exitCode = 1;
   });

@@ -1,12 +1,36 @@
 import { describe, expect, test } from 'vitest';
 
 import { DEFAULT_MODELS, renderModelsSectionYaml } from '../../src/config/models.js';
+import { FactoryError } from '../../src/platform/errors.js';
 import { readModelsConfigFromYaml } from '../../src/preflight/models.js';
+
+function refusal(fn: () => unknown): FactoryError {
+  try {
+    fn();
+  } catch (error) {
+    expect(error).toBeInstanceOf(FactoryError);
+    return error as FactoryError;
+  }
+  throw new Error('expected the call to be refused, but it returned');
+}
 
 describe('readModelsConfigFromYaml', () => {
   test('round-trips models rendered by renderModelsSectionYaml', () => {
     const parsed = readModelsConfigFromYaml(renderModelsSectionYaml(DEFAULT_MODELS));
     expect(parsed).toEqual(DEFAULT_MODELS);
+  });
+
+  test('reads a models section next to a list and a multi-line string', () => {
+    const contents = [
+      'version: 1',
+      'notes: |',
+      '  first',
+      '  second',
+      'tags:',
+      '  - a',
+      renderModelsSectionYaml(DEFAULT_MODELS),
+    ].join('\n');
+    expect(readModelsConfigFromYaml(contents)).toEqual(DEFAULT_MODELS);
   });
 
   test('fails when models section is missing', () => {
@@ -21,7 +45,7 @@ describe('readModelsConfigFromYaml', () => {
       '\t\tmodel: "gpt-5.3-codex-high"',
       '\t\tfamily: "gpt"',
     ].join('\n');
-    expect(() => readModelsConfigFromYaml(contents)).toThrow(/line 2:/i);
+    expect(refusal(() => readModelsConfigFromYaml(contents)).where).toMatch(/:2$/);
   });
 
   test('rejects duplicate keys with line number context', () => {
@@ -36,7 +60,7 @@ describe('readModelsConfigFromYaml', () => {
       '    model: "gpt-5.3-codex-high"',
       '    family: "gpt"',
     ].join('\n');
-    expect(() => readModelsConfigFromYaml(contents)).toThrow(/line 6:/i);
+    expect(refusal(() => readModelsConfigFromYaml(contents)).where).toMatch(/:6$/);
   });
 
   test('rejects reserved keys such as __proto__', () => {
@@ -49,7 +73,9 @@ describe('readModelsConfigFromYaml', () => {
       '  __proto__:',
       '    polluted: true',
     ].join('\n');
-    expect(() => readModelsConfigFromYaml(contents)).toThrow(/line 6:.*__proto__/i);
+    const error = refusal(() => readModelsConfigFromYaml(contents));
+    expect(error.where).toMatch(/:6$/);
+    expect(error.message).toContain('__proto__');
   });
 
   test('rejects malformed quoted strings with line number context', () => {
@@ -60,6 +86,6 @@ describe('readModelsConfigFromYaml', () => {
       '    model: "gpt-5.3-codex-high',
       '    family: "gpt"',
     ].join('\n');
-    expect(() => readModelsConfigFromYaml(contents)).toThrow(/line 4:/i);
+    expect(refusal(() => readModelsConfigFromYaml(contents)).where).toMatch(/:4$/);
   });
 });
