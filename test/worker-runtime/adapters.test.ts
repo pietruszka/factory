@@ -104,6 +104,7 @@ describe('the Cursor agent and OpenCode runtimes', () => {
       exitReason: 'ok',
       rawText: 'PROBE_OK',
       usage: { input: 7, output: 3, reasoning: 0, cache: { read: 0, write: 0 } },
+      costUsd: 0,
       sessionId: 'ses_123',
       durationMs: 90,
       processes,

@@ -55,7 +55,7 @@ A step that does not finish moves the run to a stop status: `exitReason` `timeou
 - **Malformed structured output.** The step is retried exactly once, in the same call, with the parse error added to the prompt and `resumeSessionId` set when the first attempt reported a session. A retry that returns valid output finishes the step and the run stays in its phase. A second malformed result ends the step as `failed` with `exit_reason` `schema_invalid` and the run as `needs_human`.
 - **Fix, verify-fail and revision loops.** `enterLoop(context, runId, kind)` allows two loops per kind and records each as an `events` row of type `loop`. The third call returns `{ allowed: false, count: 3 }` and moves the run to `needs_human`.
 
-Dollar, turn and wall-clock caps, cost summing and the `cost_missing` check are not part of this ticket.
+With the optional `cost` argument, `runSteps` also records usage, enforces the dollar and wall-clock caps and ends a step as `cost_missing` when usage is missing. See [Caps and cost](/reference/caps).
 
 ## Stale runs
 
@@ -72,4 +72,4 @@ Dollar, turn and wall-clock caps, cost summing and the `cost_missing` check are 
 ## Deferred
 
 - The `factory` commands `run`, `plan`, `approve`, `resume`, `kill`, `status` and `outcome`; intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
-- Cap accounting and the `cost_missing` normaliser (FAC-22), killing a process tree (FAC-23), the `factory resume` command, `--from`, `--cap` and the progress section of `plan.md` (FAC-24), and `factory status` (FAC-25).
+- Killing a process tree (FAC-23), the `factory resume` command, `--from`, `--cap` and the progress section of `plan.md` (FAC-24), and `factory status` (FAC-25).

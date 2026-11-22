@@ -9,7 +9,7 @@ The event log is the factory's SQLite database. It records runs, steps, events, 
 
 The per-run folder that sits next to it under the factory home is described in [Run folder](/reference/run-folder).
 
-The code that writes run statuses, step checkpoints and loop events through it is described in [Run state](/reference/run-state).
+The code that writes run statuses, step checkpoints and loop events through it is described in [Run state](/reference/run-state). The `usage` and `run_stop` events, `cost_usd` summing and `cap_usd_effective` are described in [Caps and cost](/reference/caps).
 
 ## File and driver
 

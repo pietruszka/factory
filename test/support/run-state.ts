@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+import type { RunInput } from '../../src/event-log/open.js';
 import { createMacosProcessTable } from '../../src/ports/process-table.js';
 import { createMacosSpawner } from '../../src/ports/spawner.js';
 import { createRunFolder } from '../../src/run-folder/create.js';
@@ -102,8 +103,8 @@ export interface RunStateFixture {
 }
 
 /** Run `run-1` for `example-frontend` / `FE-123` in `preflight`, with a fake clock and a temp factory home. */
-export function runStateFixture(): RunStateFixture {
-  const fx = worktreeFixture();
+export function runStateFixture(opts: { run?: Partial<RunInput> } = {}): RunStateFixture {
+  const fx = worktreeFixture(opts);
   const runFolder = createRunFolder({ env: fx.sb.env, repo: 'example-frontend', ticket: 'FE-123' });
   const worktree = fx.expectedPath();
   const context: RunStateContext = { env: fx.sb.env, deps: fx.deps, log: fx.log, reader: fx.reader };

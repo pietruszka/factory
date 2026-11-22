@@ -62,6 +62,7 @@ const output = {};
 if (scenario.text !== undefined) output.text = scenario.text;
 if (scenario.sessionId !== undefined) output.sessionId = scenario.sessionId;
 if (scenario.usage !== undefined) output.usage = scenario.usage;
+if (scenario.costUsd !== undefined) output.costUsd = scenario.costUsd;
 if (Object.keys(output).length > 0) {
   process.stdout.write(`${JSON.stringify(output)}\n`);
 }

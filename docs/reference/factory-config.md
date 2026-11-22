@@ -140,7 +140,7 @@ Every error is a `FactoryError` with exit code 2. `where` is `<file>:<line>`, or
 | `repo_config_missing` | No file in `repos/` matches the repo. |
 | `repo_config_ambiguous` | More than one file matches the repo. |
 
-`protected_globs`, `role_write_globs` and `snapshot_ignore` are used by [Write scope](/reference/write-scope).
+`protected_globs`, `role_write_globs` and `snapshot_ignore` are used by [Write scope](/reference/write-scope). `caps` and `rate_table` are used by [Caps and cost](/reference/caps).
 
 ## Not in this ticket
 
