@@ -37,3 +37,7 @@ Pipeline tests that drive the factory with the fake worker live in `test/l3/`. N
 | `npm run test:l3` | Only `test/l3/` (`vitest run test/l3/ --passWithNoTests`) |
 
 `test:l3` prints the time it took, for example `L3 took 12 s`. The budget is 120 s: on breach it prints `L3 took 121 s, budget 120 s` and exits 1. While `test/l3/` holds no test, `test:l3` passes with zero tests.
+
+## The to-do sample and the network
+
+Default tests never run `npm ci` or `npm install` in the to-do sample, and need no network. `npm test` and `npm run test:l3` unpack the checked-in zip, check the manifest, config and refusals, and read `package.json` and the lockfile from git without installing. Installing the sample and running its lint, typecheck and unit tests is the opt-in `npm run test:sample-gates`; it is not part of `npm test` or `test:l3`, and the 120 s L3 budget is unchanged. See [Sandbox](/reference/sandbox).

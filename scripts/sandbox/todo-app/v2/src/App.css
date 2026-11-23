@@ -1,0 +1,21 @@
+.app {
+  max-width: 28rem;
+  margin: 2rem auto;
+  font-family: system-ui, sans-serif;
+  color: #1a1a1a;
+}
+
+/* Planted visual delta: a pale heading on the white page, too faint to read. */
+.title {
+  color: #e6e6e6;
+}
+
+.list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.done {
+  text-decoration: line-through;
+  color: #666666;
+}

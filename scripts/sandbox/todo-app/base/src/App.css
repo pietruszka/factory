@@ -1,0 +1,20 @@
+.app {
+  max-width: 28rem;
+  margin: 2rem auto;
+  font-family: system-ui, sans-serif;
+  color: #1a1a1a;
+}
+
+.title {
+  color: #1a1a1a;
+}
+
+.list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.done {
+  text-decoration: line-through;
+  color: #666666;
+}

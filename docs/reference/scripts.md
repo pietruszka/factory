@@ -14,6 +14,8 @@ description: The only npm scripts in the factory repository.
 | `lint` | `eslint src` | ESLint over `src/`: clock and randomness ban (P-14), no hard-coded home paths (NFR-33) |
 | `test` | `vitest run` | All tests |
 | `test:l3` | `tsx scripts/run-layer.ts` | Only the `test/l3/` folder, with the time printed and a 120 s budget |
+| `test:sample-gates` | `tsx scripts/sample-gates.ts` | Opt-in, needs network: installs the to-do sample in a temp folder and runs its gates. Not part of `test` or `test:l3`. See [Sandbox](/reference/sandbox) |
+| `sandbox:pack` | `tsx scripts/pack-todo-sandbox.ts` | Dev only: rebuilds the to-do sample zip and manifest from `scripts/sandbox/todo-app/`. See [Sandbox](/reference/sandbox) |
 | `dev:init` | `tsx src/dev/dev-init.ts` | Creates a throwaway factory home |
 | `probe` | `tsx src/probe/probe.ts` | Live CLI probe (needs `FACTORY_LIVE`) |
 | `preflight` | `tsx src/preflight/models.ts` | Model preflight |
