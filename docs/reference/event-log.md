@@ -5,7 +5,7 @@ description: The SQLite event log at factory.db - location, pragmas, schema vers
 
 # Event log (FAC-15)
 
-The event log is the factory's SQLite database. It records runs, steps, events, gate rows, processes, approvals, shadow verdicts and outcomes. The code is `src/event-log/`. Nothing in the factory command line uses it yet; later tickets (run folders, state machine, status) build on it.
+The event log is the factory's SQLite database. It records runs, steps, events, gate rows, processes, approvals, shadow verdicts and outcomes. The code is `src/event-log/`. [`factory status`](/reference/status) reads it through the read-only open; `kill` and `resume` write to it.
 
 The per-run folder that sits next to it under the factory home is described in [Run folder](/reference/run-folder).
 
@@ -100,7 +100,7 @@ Each is a `FactoryError` with `where` and `next`.
 | `event_invalid` | 2 | An event is missing a required field, has a bad value or an unknown field, or names a run that does not exist. `where` is `events.<field>`. |
 | `row_invalid` | 2 | The same for every other table. `where` is `<table>.<field>`. |
 | `run_already_active` | 2 | The one-active-run index refused a write. Names the repo, ticket and the existing `run_id`; `next` points to `factory status` and `factory resume <ticket>`. |
-| `db_not_found` | 2 | A read-only open and no file. |
+| `db_not_found` | 2 | A read-only open and no file. `factory status` checks for the file first and shows an empty list instead. |
 | `db_schema_newer` | 4 | The file's version is above this build's. `next` names the file's version: install a factory that supports it, or restore a backup. |
 | `db_schema_older` | 4 | A read-only open of a file below the current version. |
 | `db_unreadable` | 4 | The file is not a SQLite database, is corrupt, or cannot be migrated. |
