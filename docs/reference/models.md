@@ -31,6 +31,8 @@ This page captures FAC-6 `[M0-5]` for home-level `config.yaml` `models:` default
 
 When any check fails, preflight exits non-zero and prints each violation.
 
+`npm run preflight` stays the model-only entry. The unified `preflight` library in [Preflight](/reference/preflight) runs the same checks (with an injected model catalog) together with the Node and git versions, config drift and the OpenCode protected-folder check.
+
 ## OpenCode with Cursor models (`cursor-acp/`)
 
 OpenCode reaches the Cursor subscription through the `cursor-acp/` provider. Availability checked with `opencode models` on 2026-11-21, on 1.19.5 and again on 2.3.2:

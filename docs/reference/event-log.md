@@ -65,6 +65,10 @@ Allowed `runs.status` values: the phases `preflight`, `routing`, `planning`, `bu
 
 Every input is validated with a Zod schema before anything is written. Unknown fields are refused rather than dropped.
 
+## Preflight event
+
+The `preflight` library appends one event of type `preflight` to a run in `preflight`, with `status` `ok` or `failed` and a `payload` that lists the checks. It sets no `cost_usd`. See [Preflight](/reference/preflight#the-preflight-event).
+
 ## Append-only tables
 
 `events`, `check_rows`, `approvals`, `shadow_verdicts` and `outcomes` have no update or delete method, and `BEFORE UPDATE` and `BEFORE DELETE` triggers abort a raw SQL update or delete too. Event ids increase monotonically, also across reopen. Rows are never deleted by the factory.

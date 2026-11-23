@@ -69,6 +69,10 @@ With the optional `cost` argument, `runSteps` also records usage, enforces the d
 
 `runSteps` skips a step whose latest attempt is `done`; a step whose latest attempt is not done gets a new attempt. `rerun` lists step ids that are started again even though they are done, and `StepSpec.resumeSessionId` passes the CLI session an earlier attempt stored to the first new attempt of a step. `phaseToResume` returns the phase a stopped run left. [`factory resume`](/reference/resume) uses all three.
 
+## Preflight
+
+The `preflight` library in [Preflight](/reference/preflight) checks a run in `preflight` and records a `preflight` event. A pass leaves the status as `preflight`. A config drift moves the run to `config_drift`, and a version, model or protected-folder failure moves it to `refused`, both through `transition`. The stub pipeline does not call it.
+
 ## Stub pipeline
 
 `runStubPlan` and `runStubBuild` in `src/run-state/stub-pipeline.ts` exist for tests. They drive one run with a fake worker: `preflight` to `routing` to `planning` with a stub plan step, then `awaiting_approval`. After an approval was recorded by the test (`runStubBuild` refuses with `approval_missing` without one), one stub build step runs, the later phases are entered without work, a stub diff and the report are written, and the run becomes `passed` when `canPassFromReport` allows it, or `needs_human` when it does not. A build step that fails or times out ends the run in the matching stop status.
@@ -76,4 +80,3 @@ With the optional `cost` argument, `runSteps` also records usage, enforces the d
 ## Deferred
 
 - The `factory` commands `run`, `plan`, `approve` and `outcome` (`kill` is in [factory kill](/reference/kill), `resume` in [factory resume](/reference/resume), `status` in [factory status](/reference/status)); intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
-- `factory status` (FAC-25).

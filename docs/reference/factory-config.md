@@ -144,4 +144,4 @@ Every error is a `FactoryError` with exit code 2. `where` is `<file>:<line>`, or
 
 ## Not in this ticket
 
-Gate-command existence and `config_drift` checks, role prompt files, writing config, a `factory config` command, and renaming `models:`.
+Role prompt files, writing config, a `factory config` command, and renaming `models:`. The gate-command and package-manager checks (`config_drift`) are in [Preflight](/reference/preflight).
