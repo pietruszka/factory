@@ -61,7 +61,7 @@ Allowed `runs.status` values: the phases `preflight`, `routing`, `planning`, `bu
 
 ## Writers
 
-`insertRun`, `updateRunStatus`, `upsertStep`, `appendEvent`, `appendCheckRows`, `appendProcess`, `endProcess`, `appendApproval`, `appendShadowVerdict`, `appendOutcome` and `close()`. A missing `run_id` is taken from `deps.newId('run')`. A missing timestamp is `deps.toIso(deps.now())`; the event log never reads the clock itself.
+`insertRun`, `updateRunStatus`, `updateRunBaseCommit`, `updateRunCap`, `upsertStep`, `appendEvent`, `appendCheckRows`, `appendProcess`, `endProcess`, `appendApproval`, `appendShadowVerdict`, `appendOutcome` and `close()`. A missing `run_id` is taken from `deps.newId('run')`. A missing timestamp is `deps.toIso(deps.now())`; the event log never reads the clock itself.
 
 Every input is validated with a Zod schema before anything is written. Unknown fields are refused rather than dropped.
 

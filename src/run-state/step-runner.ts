@@ -17,6 +17,8 @@ export interface StepSpec {
   outputSchema?: unknown;
   /** Defaults to 60 seconds. */
   timeoutMs?: number;
+  /** The CLI session of an earlier attempt, passed to the first new attempt of this step (resume). */
+  resumeSessionId?: string;
 }
 
 export interface RunStepsOptions extends RunStateContext {
@@ -31,6 +33,8 @@ export interface RunStepsOptions extends RunStateContext {
   writeScope?: WriteScopeOptions;
   /** When present, usage is normalised and the run's caps are enforced after each step. */
   cost?: CostOptions;
+  /** Ids of steps that are started again even though their last attempt is done (`factory resume --from`). */
+  rerun?: readonly string[];
 }
 
 export interface RunStepsOutcome {
@@ -61,8 +65,12 @@ function inputHash(spec: StepSpec, prompt: string): string {
   return createHash('sha256').update(input).digest('hex');
 }
 
-function isStepDone({ reader }: RunStateContext, runId: string, stepId: string): boolean {
-  return reader.query("SELECT 1 FROM steps WHERE run_id = ? AND step = ? AND status = 'done' LIMIT 1", runId, stepId).length > 0;
+/** Whether the latest attempt of the step is done. An earlier done attempt does not count once a newer one exists. */
+export function isStepDone({ reader }: RunStateContext, runId: string, stepId: string): boolean {
+  return (
+    reader.query('SELECT status FROM steps WHERE run_id = ? AND step = ? ORDER BY attempt DESC LIMIT 1', runId, stepId)[0]
+      ?.status === 'done'
+  );
 }
 
 function lastAttempt({ reader }: RunStateContext, runId: string, stepId: string): number {
@@ -159,7 +167,7 @@ function conclude(options: RunStepsOptions, stepId: string, attempt: number, res
 /** Runs one step, with exactly one retry on malformed output. Returns the stop status, or undefined when the step is done. */
 async function runStep(options: RunStepsOptions, spec: StepSpec): Promise<RunStatus | undefined> {
   const first = lastAttempt(options, options.runId, spec.stepId) + 1;
-  const firstResult = await startAttempt(options, spec, first, spec.prompt, undefined);
+  const firstResult = await startAttempt(options, spec, first, spec.prompt, spec.resumeSessionId);
   if (firstResult.exitReason !== 'malformed') {
     return conclude(options, spec.stepId, first, firstResult);
   }
@@ -176,7 +184,7 @@ async function runStep(options: RunStepsOptions, spec: StepSpec): Promise<RunSta
 
 /**
  * Moves the run into `phase`, then runs the steps in order through `WorkerRuntime.start`. A step that is
- * already checkpointed as done is skipped (continue). Each finished step is written to `steps` before the
+ * already checkpointed as done is skipped (continue), unless its id is in `rerun`. Each finished step is written to `steps` before the
  * next one starts. Malformed structured output is retried once with the parse error attached and the
  * session resumed; a second failure ends the step as `schema_invalid`. A step that does not finish moves
  * the run to a stop status (`timeout`, `budget` and `breach` map to their own, anything else to `needs_human`).
@@ -196,7 +204,7 @@ export async function runSteps(options: RunStepsOptions): Promise<RunStepsOutcom
   const ran: string[] = [];
   const skipped: string[] = [];
   for (const spec of steps) {
-    if (isStepDone(options, runId, spec.stepId)) {
+    if (isStepDone(options, runId, spec.stepId) && !options.rerun?.includes(spec.stepId)) {
       skipped.push(spec.stepId);
       continue;
     }

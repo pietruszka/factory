@@ -33,7 +33,7 @@ export const DEFAULT_GRACE_MS = 10_000;
 /** How often the grace wait looks again at whether the trees are gone. */
 const POLL_MS = 50;
 
-interface OpenProcess {
+export interface OpenProcess {
   id: number;
   pid: number;
   command: string;
@@ -69,20 +69,26 @@ async function waitForExit(
   }
 }
 
-/**
- * Stops the process trees of a run and moves it to `killed`. Each recorded process gets a polite stop
- * (`termTree`); trees that still run after the grace get `killTree`. Then the run goes to `killed`
- * through `transition`, a `killed` event is appended and the process rows are ended. The worktree is
- * never touched. A run that is already `killed` is not changed again: it only stops what is still alive.
- * A run that is neither in a phase nor `killed` is refused as `illegal_transition` before anything is signalled.
- */
-export async function killRun(options: KillRunOptions): Promise<KillRunResult> {
-  const { runId, spawner, processTable, graceMs = DEFAULT_GRACE_MS, ...context } = options;
-  const run = readRun(context, runId);
-  if (run.status !== 'killed' && !(PHASES as readonly RunStatus[]).includes(run.status)) {
-    transition(context, runId, 'killed'); // throws illegal_transition; nothing has been signalled yet
-  }
+export interface StopProcessesOptions extends RunStateContext {
+  runId: string;
+  spawner: Spawner;
+  processTable: ProcessTable;
+  /** Wait after the polite stop before SIGKILL, in ms. Defaults to 10 000. */
+  graceMs?: number;
+}
 
+export interface StoppedProcesses {
+  /** The process rows that were open; the caller ends them. */
+  rows: readonly OpenProcess[];
+  processes: KilledProcess[];
+}
+
+/**
+ * Gives every open process row of a run a polite stop (`termTree`), then `killTree` to the trees that still
+ * run after the grace. Changes neither the run status nor the process rows: the caller ends the rows.
+ */
+export async function stopRunProcesses(options: StopProcessesOptions): Promise<StoppedProcesses> {
+  const { runId, spawner, processTable, graceMs = DEFAULT_GRACE_MS, ...context } = options;
   const rows = openProcesses(context, runId);
   const term = new Map<number, TreeResult>();
   for (const row of rows) term.set(row.id, await spawner.termTree(row.pid, row.command));
@@ -97,6 +103,25 @@ export async function killRun(options: KillRunOptions): Promise<KillRunResult> {
     term: term.get(row.id) ?? 'gone',
     kill: kill.get(row.id) ?? null,
   }));
+  return { rows, processes };
+}
+
+/**
+ * Stops the process trees of a run and moves it to `killed`. Each recorded process gets a polite stop
+ * (`termTree`); trees that still run after the grace get `killTree`. Then the run goes to `killed`
+ * through `transition`, a `killed` event is appended and the process rows are ended. The worktree is
+ * never touched. A run that is already `killed` is not changed again: it only stops what is still alive.
+ * A run that is neither in a phase nor `killed` is refused as `illegal_transition` before anything is signalled.
+ */
+export async function killRun(options: KillRunOptions): Promise<KillRunResult> {
+  const { runId, ...rest } = options;
+  const { spawner, processTable, graceMs, ...context } = rest;
+  const run = readRun(context, runId);
+  if (run.status !== 'killed' && !(PHASES as readonly RunStatus[]).includes(run.status)) {
+    transition(context, runId, 'killed'); // throws illegal_transition; nothing has been signalled yet
+  }
+
+  const { rows, processes } = await stopRunProcesses({ ...context, runId, spawner, processTable, graceMs });
   transition(context, runId, 'killed');
   if (run.status !== 'killed' || rows.length > 0) {
     context.log.appendEvent({ run_id: runId, type: 'killed', status: 'killed', payload: { processes } });

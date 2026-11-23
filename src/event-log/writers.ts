@@ -31,6 +31,10 @@ export interface EventLogWriters {
   insertRun(input: RunInput): { run_id: string };
   /** Moves a run to another status. `ended_at` is kept as it is unless given. */
   updateRunStatus(run_id: string, status: string, ended_at?: string): void;
+  /** Sets `runs.base_commit` in place, for example to the HEAD of the worktree on resume. */
+  updateRunBaseCommit(run_id: string, base_commit: string): void;
+  /** Sets `runs.cap_usd_effective` in place, for example when `factory resume --cap` raises it. */
+  updateRunCap(run_id: string, cap_usd_effective: number): void;
   /** Adds a step attempt or changes the status and times of an existing one (a checkpoint). */
   upsertStep(input: StepInput): void;
   appendEvent(input: EventInput): { id: number };
@@ -214,6 +218,22 @@ export function createWriters({ db, deps, secrets }: WriterContext): EventLogWri
         );
       } catch (error) {
         throw activeRunConflictOr(error, String(target.repo), String(target.ticket), row.run_id);
+      }
+    },
+
+    updateRunBaseCommit(run_id, base_commit) {
+      const row = redactRow(parseRow(runSchema.pick({ run_id: true, base_commit: true }), { run_id, base_commit }, 'runs', 'row_invalid'));
+      const result = db.prepare('UPDATE runs SET base_commit = ? WHERE run_id = ?').run(row.base_commit, row.run_id);
+      if (toNumber(result.changes) === 0) {
+        throw invalid('row_invalid', 'runs', 'run_id', `${row.run_id} does not exist`);
+      }
+    },
+
+    updateRunCap(run_id, cap_usd_effective) {
+      const row = parseRow(runSchema.pick({ run_id: true, cap_usd_effective: true }), { run_id, cap_usd_effective }, 'runs', 'row_invalid');
+      const result = db.prepare('UPDATE runs SET cap_usd_effective = ? WHERE run_id = ?').run(row.cap_usd_effective ?? null, row.run_id);
+      if (toNumber(result.changes) === 0) {
+        throw invalid('row_invalid', 'runs', 'run_id', `${row.run_id} does not exist`);
       }
     },
 

@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { FactoryError } from '../platform/errors.js';
@@ -28,7 +29,8 @@ const PLAN_STEP: StepSpec = {
   outputSchema: { type: 'object' },
 };
 
-const BUILD_STEP: StepSpec = {
+/** The one build step of the stub pipeline. */
+export const STUB_BUILD_STEP: StepSpec = {
   stepId: 'implement',
   role: 'implementer',
   model: STUB_MODEL,
@@ -55,7 +57,8 @@ export async function runStubPlan(options: StubPipelineOptions): Promise<RunStat
   return 'awaiting_approval';
 }
 
-function assertApproved(context: RunStateContext, runId: string): void {
+/** Refuses a run that has no recorded approval, as `approval_missing`. */
+export function assertApproved(context: RunStateContext, runId: string): void {
   if (context.reader.query('SELECT id FROM approvals WHERE run_id = ? LIMIT 1', runId).length === 0) {
     throw new FactoryError({
       code: 'approval_missing',
@@ -75,15 +78,26 @@ function assertApproved(context: RunStateContext, runId: string): void {
 export async function runStubBuild(options: StubPipelineOptions): Promise<RunStatus> {
   const { runId, worktree, runtime, ...context } = options;
   assertApproved(context, runId);
-  const outcome = await runSteps({ ...context, runtime, runId, phase: 'building', cwd: worktree, steps: [BUILD_STEP] });
+  const outcome = await runSteps({ ...context, runtime, runId, phase: 'building', cwd: worktree, steps: [STUB_BUILD_STEP] });
   if (outcome.status !== 'building') {
     return outcome.status;
   }
   for (const phase of PHASES_AFTER_BUILD) {
     transition(context, runId, phase);
   }
+  return finishStubRun(context, runId, worktree);
+}
+
+/**
+ * The end of the stub pipeline, for a run that is in its last phase: the stub evidence diff (kept when one is
+ * already there), the report, then `passed`, or `needs_human` when the required artifacts are missing.
+ */
+export function finishStubRun(context: RunStateContext, runId: string, worktree: string): RunStatus {
   const run = readRun(context, runId);
-  writeEvidenceDiff({ env: context.env, repo: run.repo, ticket: run.ticket, diff: '# stub diff\n' });
+  const diffPath = join(runFolderPath(context.env, run.repo, run.ticket), 'evidence', 'diff.patch');
+  if (!existsSync(diffPath)) {
+    writeEvidenceDiff({ env: context.env, repo: run.repo, ticket: run.ticket, diff: '# stub diff\n' });
+  }
   writeReport({ env: context.env, log: context.reader, runId, worktreePath: worktree });
   try {
     transition(context, runId, 'passed');

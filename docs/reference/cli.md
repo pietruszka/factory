@@ -17,6 +17,7 @@ factory <command> [arguments] [--json]
 | --- | --- | --- |
 | `version` | Prints `factory <version>` from `package.json`. `factory --version` is the same command. | no |
 | `kill <ticket>` | Stops the run of a ticket in the current checkout and keeps its worktree. See [factory kill](/reference/kill). | yes |
+| `resume <ticket>` | Continues a stopped run of a ticket from its checkpoint, in its existing worktree. Takes `--from <step>` and `--cap +$N`. See [factory resume](/reference/resume). | yes |
 | `help` | Lists the commands. | no |
 
 `help` and `version` answer at once: they skip the git check. Every other command checks git once before it runs. All commands check Node first.
@@ -40,9 +41,27 @@ factory kill FE-123
 
 `kill` finds the repo from the current folder: the git top folder of `cwd`, the repo config that matches it, and the config file name without `.yaml` (for example `repos/example-frontend.yaml` gives `example-frontend`). It then takes the one run of that repo and ticket that is not `passed`, `refused` or `breach`. A run that is already `killed` counts.
 
-It stops the recorded process trees (children first, a polite stop before SIGKILL), moves the run to `killed`, writes a `killed` event and keeps the worktree. On success `next_command` is `factory resume FE-123` and the text names the ticket, that the worktree was kept, and the run folder path. `factory resume` itself comes in a later ticket; until then the next command is a pointer, not a command you can run yet. Details: [factory kill](/reference/kill).
+It stops the recorded process trees (children first, a polite stop before SIGKILL), moves the run to `killed`, writes a `killed` event and keeps the worktree. On success `next_command` is `factory resume FE-123` and the text names the ticket, that the worktree was kept, and the run folder path. Details: [factory kill](/reference/kill); to continue the run, see [`factory resume`](#factory-resume-ticket).
 
 A second `factory kill FE-123` on a run that is already `killed`, with no live matching process, exits 0, signals nothing and keeps the worktree.
+
+### `factory resume <ticket>`
+
+```sh
+cd path/to/example-frontend
+factory resume FE-123
+factory resume FE-123 --from verify
+factory resume FE-123 --cap "+$2"
+```
+
+`resume` finds the repo from the current folder the same way `kill` does, then takes the one run of that repo and ticket that is not `passed`, `refused` or `breach`. It continues that run in its existing worktree: steps with a done checkpoint are not started again, and an unfinished step gets a new attempt. A run that was `killed` or stopped for another reason goes back to the phase it left, never to a later one.
+
+| Flag | Meaning |
+| --- | --- |
+| `--from <step>` | Run that step and every later step again; earlier done checkpoints are kept. Takes a step id, a phase name, or the short names `plan`, `build`, `gate`, `verify` and `review`. A step in a phase the run already left is refused. |
+| `--cap +$N` | Add N dollars (`+$2`, `+$0.50`) to the run's dollar cap. Quote it, because `$` is special in a shell. Nothing raises the cap automatically. It adds dollars only: it does not extend the wall-clock cap. |
+
+On success `next_command` is `factory resume FE-123` unless the run is now `passed`. Details, the order of work and the limits: [factory resume](/reference/resume).
 
 ## `--json`
 
@@ -69,7 +88,7 @@ With `--json`, stdout holds exactly one JSON document followed by a newline. The
 | `exit_code` | 0 to 4 | Same as the process exit code |
 | `message` | string | The human text |
 | `errors` | array | `{ code, message, where?, next? }` entries; empty on success |
-| `next_command` | string or null | A next step, for example `factory help`. A command sets it on success too (`kill` sets `factory resume FE-123`); the text output prints it as a `Next:` line |
+| `next_command` | string or null | A next step, for example `factory help`. A command sets it on success too (`kill` and an unfinished `resume` set `factory resume FE-123`); the text output prints it as a `Next:` line |
 | `data` | any, optional | Command-specific payload |
 
 The output is checked against its schema (`CliOutputSchema` in `src/cli/schemas.ts`) before it is printed. If it does not match, nothing of it is printed; instead the process prints an `internal_error` envelope and exits 4.
@@ -94,10 +113,17 @@ An uncaught error in a command is caught at the top and reported as `internal_er
 | `unknown_command` | 2 | The command is not in the table | run `factory help` |
 | `unknown_flag` | 2 | A flag the command does not accept | run `factory help` |
 | `invalid_usage` | 2 | Another argument problem, for example a stray argument | run `factory help` |
-| `ticket_invalid` | 2 | `kill` got a ticket that is not a slug | pass a ticket key such as `FE-123` |
-| `checkout_invalid` | 2 | `kill` ran in a folder that is not inside a git checkout | run it from inside the work-repo checkout |
+| `ticket_invalid` | 2 | `kill` or `resume` got a ticket that is not a slug | pass a ticket key such as `FE-123` |
+| `checkout_invalid` | 2 | `kill` or `resume` ran in a folder that is not inside a git checkout | run it from inside the work-repo checkout |
 | `repo_config_missing` | 2 | No repo config matches the checkout (see [Factory config](/reference/factory-config)) | create the repo config file |
 | `run_not_found` | 2 | No running or stopped run for that repo and ticket; nothing was signalled | check the ticket and the checkout |
+| `run_not_resumable` | 2 | `resume` on a run that is `passed`, `refused` or `breach`; nothing was started | start a new run for the ticket |
+| `step_unknown` | 2 | `resume --from` names a step the pipeline does not have | pass one of the listed steps |
+| `from_behind` | 2 | `resume --from` names a step in a phase the run already left | pass a step of the current or a later phase |
+| `cap_invalid` | 2 | `resume --cap` is not a plus sign and a dollar amount above zero | pass `--cap "+$2"` |
+| `cap_reached` | 2 | `resume` on a run whose spend already reaches its dollar cap; the message names the amount spent | pass `--cap "+$N"` |
+| `worktree_missing` | 2 | `resume` found no worktree for the run; none is created | restore the worktree or start a new run |
+| `approval_missing` | 2 | `resume` of a run that has not reached building and has no recorded approval | record an approval first |
 | `illegal_transition` | 2 | `kill` on a run that is stopped for another reason, or final; nothing was signalled | see [Run state](/reference/run-state) |
 | `node_too_old` | 2 | Node.js older than 22.13 | install Node.js 22.13 or newer |
 | `git_missing` | 2 | `git --version` could not be run | install git 2.40 or newer |

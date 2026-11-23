@@ -3,6 +3,7 @@ import { parseArgs, type ParseArgsConfig } from 'node:util';
 import { FactoryError } from '../platform/errors.js';
 import { EXIT_CODES } from './exit-codes.js';
 import { killCommand } from './kill.js';
+import { resumeCommand } from './resume.js';
 
 type ParsedValues = ReturnType<typeof parseArgs>['values'];
 
@@ -75,6 +76,7 @@ export const defaultCommands: CommandTable = {
     }),
   },
   kill: killCommand,
+  resume: resumeCommand,
   help: {
     description: 'Show this help.',
     skipGitCheck: true,
