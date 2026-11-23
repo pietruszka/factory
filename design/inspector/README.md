@@ -19,7 +19,6 @@ These are design files, not code. They live outside `docs/` on purpose: `docs/` 
 | `06-broken-events-gaps.png` | A run with gaps (FE-131): missing `ended_at`, invalid `payload_json`, DB-vs-files mismatches, an expired prompt. The page stays up and names every gap. |
 | `07-run-list-light.png` | The run list in the light theme. |
 | `08-status-tokens.png` | The approved status, lane, tier, cost-label and link tokens. |
-| `src/` | Python scripts that generate the FigCraft command script (about 90 KB). |
 
 All PNGs are 1440 px wide at 1x.
 
@@ -120,21 +119,9 @@ Type, sizes and radii:
 
 There is also a cost gap. `gpt-5.3-codex-high` has no price in `src/cost/price-table.ts`, so real Cursor runs need a `rate_table` entry, or they end as `cost_missing`.
 
-## Re-render
+## Editing
 
-You need Python 3 with Pillow (it is used to measure text), the Inter and JetBrains Mono fonts installed, and `figcraft-cli` 0.11.2 or later. `src/lib.py` has the Inter font path near its top; change it if your fonts live elsewhere.
-
-```sh
-cd design/inspector/src
-python3 build.py                     # writes inspector.script.json next to it (generated, not committed)
-cd ..
-figcraft-cli run src/inspector.script.json --out inspector.figcraft
-figcraft-cli export inspector.figcraft -o png/                # one PNG per frame, named after the frame
-figcraft-cli export inspector.figcraft -o png@2x/ --scale 2   # optional retina copies
-figcraft-cli export inspector.figcraft -o inspector.fig       # experimental .fig export
-```
-
-The frame exports are named after the frames (`01 Run list · dark.png` …). Rename them to the kebab-case names above when you replace the committed PNGs. `00-overview.png` is a contact sheet of frames 01–08 made with Pillow, and is not part of the FigCraft file.
+The mockups are edited directly in `inspector.figcraft` with FigCraft (the app or its MCP server). PNGs are exported from that file.
 
 `.figcraft` and `.fig` files are zip archives. To keep git from diffing them as text, add these lines to `.gitattributes`:
 
