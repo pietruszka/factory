@@ -77,6 +77,10 @@ The `preflight` library in [Preflight](/reference/preflight) checks a run in `pr
 
 `runStubPlan` and `runStubBuild` in `src/run-state/stub-pipeline.ts` exist for tests. They drive one run with a fake worker: `preflight` to `routing` to `planning` with a stub plan step, then `awaiting_approval`. After an approval was recorded by the test (`runStubBuild` refuses with `approval_missing` without one), one stub build step runs, the later phases are entered without work, a stub diff and the report are written, and the run becomes `passed` when `canPassFromReport` allows it, or `needs_human` when it does not. A build step that fails or times out ends the run in the matching stop status.
 
+## Retention
+
+`factory clean` reads `runs.ended_at` to age a run's artifacts and never changes a run's status; it does not call `transition`, `markStaleRuns` or `killRun`. See [factory clean](/reference/clean).
+
 ## Deferred
 
 - The `factory` commands `run`, `plan`, `approve` and `outcome` (`kill` is in [factory kill](/reference/kill), `resume` in [factory resume](/reference/resume), `status` in [factory status](/reference/status)); intake, routing, real gates, verifiers, reviewer and opening a draft pull request.

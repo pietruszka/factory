@@ -2,6 +2,7 @@ import { parseArgs, type ParseArgsConfig } from 'node:util';
 
 import { FactoryError } from '../platform/errors.js';
 import { EXIT_CODES } from './exit-codes.js';
+import { cleanCommand } from './clean.js';
 import { killCommand } from './kill.js';
 import { resumeCommand } from './resume.js';
 import { statusCommand } from './status.js';
@@ -81,6 +82,7 @@ export const defaultCommands: CommandTable = {
       data: { version: packageVersion },
     }),
   },
+  clean: cleanCommand,
   kill: killCommand,
   resume: resumeCommand,
   status: statusCommand,

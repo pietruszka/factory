@@ -16,12 +16,13 @@ factory <command> [arguments] [--json]
 | Command | What it does | Checks git |
 | --- | --- | --- |
 | `version` | Prints `factory <version>` from `package.json`. `factory --version` is the same command. | no |
+| `clean` | Deletes worktrees 7 days after a merge or an abandon, and `ticket.json`, prompts and evidence 30 days after a run ended; prints disk use per area. See [factory clean](/reference/clean). | no |
 | `kill <ticket>` | Stops the run of a ticket in the current checkout and keeps its worktree. See [factory kill](/reference/kill). | yes |
 | `resume <ticket>` | Continues a stopped run of a ticket from its checkpoint, in its existing worktree. Takes `--from <step>` and `--cap +$N`. See [factory resume](/reference/resume). | yes |
 | `status [ticket]` | Lists the active and the 10 most recent runs, or only the runs of one ticket, without writing anything. See [factory status](/reference/status). | no |
 | `help` | Lists the commands. | no |
 
-`help`, `version` and `status` answer at once: they skip the git check. Every other command checks git once before it runs. All commands check Node first.
+`help`, `version`, `status` and `clean` answer at once: they skip the git check. Every other command checks git once before it runs. All commands check Node first.
 
 `factory` with no command prints the usage text and exits 2.
 
@@ -72,9 +73,18 @@ factory status FE-123
 factory status --json
 ```
 
-`status` lists runs from the event log. It does not need a checkout or a repo config, and it does not check git. With no ticket it lists every active run and the 10 most recent finished runs, in every repo. With a ticket it lists only that ticket's runs, in every repo. Active runs (stored status is a phase) come first; recent runs follow, newest last event first. Each row shows ticket, repo, flow, stored status, current step, cost marked `reported` or `estimated`, and time since the last event. A run in a phase whose process is gone is marked `stale`; this is only shown, and nothing is written (the status is not changed to `interrupted`). With `--json`, `data` is `{ "schema_version": 1, "rows": [...] }`.
+`status` lists runs from the event log. It does not need a checkout or a repo config, and it does not check git. With no ticket it lists every active run and the 10 most recent finished runs, in every repo. With a ticket it lists only that ticket's runs, in every repo. Active runs (stored status is a phase) come first; recent runs follow, newest last event first. Each row shows ticket, repo, flow, stored status, current step, cost marked `reported` or `estimated`, and time since the last event. A run in a phase whose process is gone is marked `stale`; this is only shown, and nothing is written (the status is not changed to `interrupted`). With `--json`, `data` is `{ "schema_version": 1, "rows": [...], "disk": {...} }`; `disk` has the bytes of the worktrees, runs and db areas and their total, plus a `warning` above 10 GiB.
 
-When `factory.db` is missing, it prints an empty list and exits 0 without creating anything. A ticket that is not a slug is refused as `ticket_invalid` (exit 2). Details, the text format and the JSON fields: [factory status](/reference/status).
+When `factory.db` is missing, it prints an empty list, leaves `disk` out and exits 0 without creating anything. A ticket that is not a slug is refused as `ticket_invalid` (exit 2). Details, the text format and the JSON fields: [factory status](/reference/status).
+
+### `factory clean`
+
+```sh
+factory clean
+factory clean --json
+```
+
+`clean` applies the retention policy to every run in the event log: it removes a worktree more than 7 days after the pull request merged or the run was abandoned, and deletes `ticket.json`, `prompts/` and `evidence/` of a run that ended more than 30 days ago. It keeps `report.md`, `plan.md` and every event row. It prints what it removed and the disk use per area, with a soft warning above 10 GiB (exit 0). It does not need a checkout and does not check git. When `factory.db` is missing it exits 0 and creates nothing. Details: [factory clean](/reference/clean).
 
 ## `--json`
 

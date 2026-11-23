@@ -34,10 +34,20 @@ const StatusRowSchema = z.strictObject({
   stale: z.boolean(),
 });
 
+const DiskReportSchema = z.strictObject({
+  worktrees: z.number().nonnegative(),
+  runs: z.number().nonnegative(),
+  db: z.number().nonnegative(),
+  total: z.number().nonnegative(),
+  warning: z.string().min(1).optional(),
+});
+
 /** The `data` of `factory status --json`. */
 export const StatusDocumentSchema = z.strictObject({
   schema_version: z.literal(1),
   rows: z.array(StatusRowSchema),
+  /** Disk use per area; absent when there is no event log. */
+  disk: DiskReportSchema.optional(),
 });
 
 /** How many finished runs are listed besides the active ones. */
