@@ -15,15 +15,18 @@ export const ARTIFACT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const ARTIFACTS = ['ticket.json', 'prompts', 'evidence'] as const;
 
 /**
- * Removes `path` and everything under it, returning the files and links removed (relative to `base`). A symlink
- * is removed as a link and never followed, so its target stays. A missing path is nothing to do.
+ * Removes `path` and everything under it, returning the files, links and empty directories removed (relative to
+ * `base`). A symlink is removed as a link and never followed, so its target stays. A missing path is nothing to do.
  */
 function removeEntry(path: string, base: string, removed: string[]): void {
   const stat = lstatSync(path, { throwIfNoEntry: false });
   if (stat === undefined) return;
   if (stat.isDirectory()) {
-    for (const name of readdirSync(path)) removeEntry(join(path, name), base, removed);
+    const names = readdirSync(path);
+    for (const name of names) removeEntry(join(path, name), base, removed);
     rmdirSync(path);
+    // A directory that held nothing has no file to stand for it, so its own path is recorded.
+    if (names.length === 0) removed.push(relative(base, path));
     return;
   }
   unlinkSync(path);

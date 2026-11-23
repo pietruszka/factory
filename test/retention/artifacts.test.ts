@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -67,6 +67,36 @@ describe('artifact retention: large evidence goes after 30 days, kept files neve
     expect(eventsOf(fx.reader, 'run-a', 'retention_cleaned')).toHaveLength(1);
     expect(eventsOf(fx.reader, 'run-b', 'retention_cleaned')).toEqual([]);
     expect(fx.eventRows().slice(0, rowsBefore.length)).toEqual(rowsBefore);
+  });
+
+  test('empty prompts/ and evidence/ folders of a run that ended more than 30 days ago are removed and listed in one retention event', async () => {
+    const fx = retentionFixture();
+    const run = fx.seed({ runId: 'run-a', ticket: 'FE-201', worktree: false, endedAgoMs: 31 * DAY });
+    for (const name of ['prompts', 'evidence']) {
+      rmSync(join(run.runFolder, name), { recursive: true });
+      mkdirSync(join(run.runFolder, name));
+    }
+    rmSync(join(run.runFolder, 'ticket.json'));
+    const keptBefore = Object.fromEntries(KEPT_FILES.map((name) => [name, contentsUnder(run.runFolder)[name]]));
+    const rowsBefore = fx.eventRows();
+
+    const result = await fx.clean();
+
+    expect(existsSync(join(run.runFolder, 'prompts'))).toBe(false);
+    expect(existsSync(join(run.runFolder, 'evidence'))).toBe(false);
+    expect(contentsUnder(run.runFolder)).toEqual(keptBefore);
+    expect(existsSync(join(run.runFolder, 'report.md'))).toBe(true);
+    expect(existsSync(join(run.runFolder, 'plan.md'))).toBe(true);
+    expect(result.artifacts_deleted).toEqual([{ run_id: 'run-a', paths: ['evidence', 'prompts'] }]);
+    expect(fx.eventRows().slice(0, rowsBefore.length)).toEqual(rowsBefore);
+    const events = eventsOf(fx.reader, 'run-a', 'retention_cleaned');
+    expect(events).toHaveLength(1);
+    expect((events[0]?.payload as { paths: string[] }).paths).toEqual(['evidence', 'prompts']);
+
+    const rowsAfterFirst = fx.eventRows();
+    const second = await fx.clean();
+    expect(second.artifacts_deleted).toEqual([]);
+    expect(fx.eventRows()).toEqual(rowsAfterFirst);
   });
 
   test('a second clean finds nothing to do and adds no event', async () => {
