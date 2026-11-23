@@ -5,6 +5,8 @@ export interface PullRequest {
   title: string;
   url: string;
   headBranch: string;
+  /** ISO-8601 time the pull request was merged; absent or null when it is not merged. */
+  mergedAt?: string | null;
 }
 
 export type CodeHostWrite = 'push' | 'openDraftPr';

@@ -431,7 +431,7 @@ Project skills live in `SKILL.md`, readable by any runtime. Nothing from a run i
 
 Every event is a row in `factory.db` with run id, role, model, step, start, end, cost, tokens in, tokens out, and status. Gate events include the evidence: what was checked, the inputs, and the result. An event missing a required field fails that run's schema check.
 
-Finished worktrees are cleaned up after N days. `factory clean --older-than 30d` removes old worktrees and large evidence and keeps `report.md` and the event rows. A shorter schedule (worktrees 7 days after merge or abandon, large evidence after 30 days, also keeping `plan.md`) is still an open question.
+`factory clean` applies two fixed rules. A worktree is removed more than 7 days after its pull request merged or the run was abandoned. `ticket.json`, `prompts/` and `evidence/` are deleted more than 30 days after the run ended (`ended_at`). `report.md`, `plan.md` and the event rows are kept. It takes no `--older-than` flag, and nothing runs it on a schedule: it applies the rules when you run it.
 
 `factory inspect` serves a read-only UI on localhost. It reads the event log and the run folders. It has no control that changes a run, a file, a PR, or Jira, and it is not reachable from other machines.
 

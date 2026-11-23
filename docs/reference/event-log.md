@@ -95,6 +95,10 @@ The scan is not a guarantee: a secret in an unknown format that is not in the en
 
 A writable open creates the factory home with mode `0700` if it is missing, and sets the home to `0700` and `factory.db` and any `factory.db-wal` and `factory.db-shm` to `0600`, tightening existing files that are too open. It touches no other folder. A read-only open creates nothing and changes no mode.
 
+## Retention
+
+[`factory clean`](/reference/clean) never deletes an event row. It appends a `retention_cleaned` event (payload: `run_folder` and the `paths` removed, no `cost_usd`) when it deletes a run's artifacts, and `removeWorktree` appends `worktree_removed`. It reads `runs.ended_at`, the latest `outcomes` row and the latest `draft_pr` event (`payload.number`) to decide ages.
+
 ## Errors
 
 Each is a `FactoryError` with `where` and `next`.
@@ -112,4 +116,4 @@ Each is a `FactoryError` with `where` and `next`.
 
 ## Not in this ticket
 
-A factory command that reads the log, the inspector UI, run folders, worktrees and path overlap, stale-pid marking, retention, reading an older schema without migrating, and storing ticket snapshots.
+A factory command that reads the log, the inspector UI, run folders, worktrees and path overlap, stale-pid marking, reading an older schema without migrating, and storing ticket snapshots.

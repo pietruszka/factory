@@ -108,9 +108,13 @@ Marking is **display only**. `status` does not write `interrupted`, does not end
 
 A run that is only just starting (for example in `preflight` before it records a process) has no process row yet and shows as stale for that moment.
 
+## Disk use
+
+`status` also measures disk use and shows it below the table: bytes for the worktrees, the runs and the db, and a total. A ticket filter does not change it. Measuring reads file sizes and writes nothing. In `--json`, `data.disk` carries `worktrees`, `runs`, `db` and `total`, plus a `warning` when the total is above 10 GiB; the warning does not change the exit code. See [factory clean](/reference/clean#disk-use).
+
 ## No event log
 
-When `factory.db` does not exist, `status` prints an empty list and exits 0 (`{ "schema_version": 1, "rows": [] }` with `--json`). It creates no home, no database and no run folder. A file with an older or newer schema is refused with `db_schema_older` or `db_schema_newer` (exit 4) and is not changed.
+When `factory.db` does not exist, `status` prints an empty list and exits 0 (`{ "schema_version": 1, "rows": [] }` with `--json`, with no `disk`). It creates no home, no database and no run folder. A file with an older or newer schema is refused with `db_schema_older` or `db_schema_newer` (exit 4) and is not changed.
 
 ## Not covered
 

@@ -82,6 +82,10 @@ Each is a `FactoryError` with `where` and `next`, exit code 2.
 | `worktree_already_installed` | The install already succeeded in this worktree for this run. |
 | `worktree_install_failed` | The install command exited with a non-zero code. |
 
+## Retention
+
+[`factory clean`](/reference/clean) removes a run's worktree through `removeWorktree` once it is more than 7 days past a merge or an abandon. A linked worktree whose work-repo checkout is missing is skipped, never deleted by hand.
+
 ## Tests
 
 They use real git on disposable repos under a temp home, and a fake command runner. They never touch the real factory home, cache folder or a real work-repo checkout.
@@ -90,4 +94,4 @@ Role write scopes are checked by a snapshot diff of the worktree; see [Write sco
 
 ## Not in this ticket
 
-A factory command, the run state machine and marking a run `passed`, retention of old worktrees, preflight (the git version floor), `WorkerRuntime`, cap enforcement, stale-pid marking, a live OpenCode run, creating `factory/<ticket>` in the work repo.
+A factory command to create a worktree, the run state machine and marking a run `passed`, preflight (the git version floor), `WorkerRuntime`, cap enforcement, stale-pid marking, a live OpenCode run, creating `factory/<ticket>` in the work repo.

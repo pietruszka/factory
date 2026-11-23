@@ -90,6 +90,10 @@ The progress section is not part of what a person approves. `approvedContent(mar
 
 Directories are `0700` and files `0600`. Every writer sets `0600` after it writes, also on an existing file. `createRunFolder` on an existing run folder tightens everything in it that the current user owns, and the factory home, `runs/` and `runs/<repo>/` themselves. It does not walk any other folder and does not follow symlinks.
 
+## Retention
+
+[`factory clean`](/reference/clean) deletes `ticket.json`, everything under `prompts/` and everything under `evidence/` (including `diff.patch` and the gate logs) more than 30 days after `runs.ended_at`. `report.md`, `plan.md`, `plan.approved`, `decisions.md`, `review.md`, `context/`, `verify/` and the run folder itself are kept.
+
 ## Errors
 
 Each is a `FactoryError` with `where` and `next`.
@@ -101,4 +105,4 @@ Each is a `FactoryError` with `where` and `next`.
 
 ## Not in this ticket
 
-A factory command, the inspector, worktree creation (see [Worktrees](/reference/worktrees)), the run state machine and marking a run `passed`, writing `ticket.json`, the plan itself or `plan.approved`, opening a draft PR, and retention of old prompts.
+A factory command, the inspector, worktree creation (see [Worktrees](/reference/worktrees)), the run state machine and marking a run `passed`, writing `ticket.json`, the plan itself or `plan.approved`, and opening a draft PR.

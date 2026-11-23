@@ -4,6 +4,7 @@ import { openEventLogReadOnly } from '../event-log/open.js';
 import { createSystemDeps, type Deps } from '../platform/deps.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
 import { createMacosProcessTable, type ProcessTable } from '../ports/process-table.js';
+import { diskReport, measureDiskUse, renderDisk, type MeasureDisk } from '../retention/disk-usage.js';
 import { isSlug } from '../run-folder/path.js';
 import { listRuns, type StatusRow } from '../status/list-runs.js';
 import { refuse } from './checkout.js';
@@ -13,6 +14,8 @@ import type { CommandDef } from './router.js';
 export interface StatusCommandOptions {
   deps: Deps;
   processTable: ProcessTable;
+  /** Measures disk use per area; tests inject a size instead of writing gigabytes. */
+  measureDisk: MeasureDisk;
 }
 
 const SECOND = 1000;
@@ -69,13 +72,16 @@ export function createStatusCommand(options: Partial<StatusCommandOptions> = {})
       }
       const env = process.env;
       // A home with no event log has no runs. Opening it writably would create it, so it is not opened at all.
-      const rows = existsSync(resolveFactoryPaths(env).dbPath)
-        ? await readRows(options, ticket)
-        : [];
+      if (!existsSync(resolveFactoryPaths(env).dbPath)) {
+        return { message: `No ${ticket === undefined ? 'runs' : `runs of ${ticket}`} recorded.`, data: { schema_version: 1, rows: [] } };
+      }
+      const rows = await readRows(options, ticket);
+      // Disk use covers the whole home, whatever the ticket filter. Measuring reads sizes and writes nothing.
+      const disk = diskReport((options.measureDisk ?? measureDiskUse)(env));
       const subject = ticket === undefined ? 'runs' : `runs of ${ticket}`;
       return {
-        message: rows.length === 0 ? `No ${subject} recorded.` : renderRows(rows),
-        data: { schema_version: 1, rows },
+        message: `${rows.length === 0 ? `No ${subject} recorded.` : renderRows(rows)}\n\n${renderDisk(disk)}`,
+        data: { schema_version: 1, rows, disk },
       };
     },
   };
