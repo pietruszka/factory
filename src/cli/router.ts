@@ -3,6 +3,7 @@ import { parseArgs, type ParseArgsConfig } from 'node:util';
 import { FactoryError } from '../platform/errors.js';
 import { EXIT_CODES } from './exit-codes.js';
 import { cleanCommand } from './clean.js';
+import { devApproveCommand } from './dev-approve.js';
 import { devInitCommand } from './dev-init.js';
 import { killCommand } from './kill.js';
 import { resumeCommand } from './resume.js';
@@ -84,6 +85,7 @@ export const defaultCommands: CommandTable = {
     }),
   },
   clean: cleanCommand,
+  'dev-approve': devApproveCommand,
   'dev-init': devInitCommand,
   kill: killCommand,
   resume: resumeCommand,

@@ -30,11 +30,11 @@ const repoConfigYaml = (sandboxPath: string): string =>
   ].join('\n');
 
 /** The throwaway home from FACTORY_HOME. Plain errors from the dev-home rules become refusals (exit 2). */
-function throwawayHome(env: NodeJS.ProcessEnv): string {
+export function throwawayHome(env: NodeJS.ProcessEnv, command = 'dev-init --sample'): string {
   if (!env.FACTORY_HOME) {
     throw refuse(
       'dev_home_required',
-      'FACTORY_HOME is not set. dev-init --sample only writes into a throwaway factory home.',
+      `FACTORY_HOME is not set. ${command} only works in a throwaway factory home.`,
       'FACTORY_HOME',
       'Run `npm run dev:init -- <throwaway-folder>`, then set FACTORY_HOME to that folder.',
     );
