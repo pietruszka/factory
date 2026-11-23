@@ -1,0 +1,2 @@
+# The lockfile is generated: keep it out of text diffs and searches.
+package-lock.json -diff

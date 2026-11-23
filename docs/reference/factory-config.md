@@ -64,7 +64,7 @@ A file that holds only a `models:` section, as `dev:init` writes it, is valid. U
 
 `match` selects the file. It is not part of the merged config or its hash.
 
-`factory dev-init --sample todo-v0` writes such a file with only `match.path`, for the to-do sample repo, which has no remote. See [Sandbox and dev-init](/reference/sandbox).
+`factory dev-init --sample todo-v0` writes such a file with only `match.path`, for the unpacked to-do sample repo, which has no remote. See [Sandbox and dev-init](/reference/sandbox).
 
 ### Secrets
 

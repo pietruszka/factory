@@ -1,0 +1,28 @@
+{
+  "zipSha256": "c13a2731ce9af49ff4c5e58db03de6d964bcc7210ca60acc36133a1157a4d9a1",
+  "identity": {
+    "name": "Factory Sandbox",
+    "email": "factory-sandbox@example.invalid"
+  },
+  "dates": {
+    "todo-v0": "2024-01-01T12:00:00+01:00",
+    "todo-v1": "2024-01-02T12:00:00+01:00",
+    "todo-v2": "2024-01-03T12:00:00+01:00"
+  },
+  "tags": {
+    "todo-v0": {
+      "tagObject": "184a859e0f97cf977041096f2df3e41128b1e564",
+      "commit": "6a4113a0c8ebf1fca6856ec25ef8114c0f9c0bd9"
+    },
+    "todo-v1": {
+      "tagObject": "f96b2ba0a5113af9ba555ddd2f89bf411188d285",
+      "commit": "ac4037c2feb80a4d40ed6b4d63f20be9d63a1299"
+    },
+    "todo-v2": {
+      "tagObject": "1faf981a26834200328c888d7d6cc4e29ed14c0c",
+      "commit": "26cfde3fc3284ef8e3dbf7b658064c3013609910"
+    }
+  },
+  "node": "v22.23.5",
+  "npm": "10.9.9"
+}

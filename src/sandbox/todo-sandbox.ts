@@ -1,57 +1,66 @@
 import { execFileSync } from 'node:child_process';
-import { lstatSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { FactoryError } from '../platform/errors.js';
 import { assertNotProtectedFolder, resolveFactoryPaths } from '../platform/paths.js';
-import { SAMPLE_TAGS, SAMPLE_VERSIONS, SANDBOX_IDENTITY, type FileSet } from './todo-app-files.js';
+import { unzipSafely } from './unzip.js';
 
-export { SAMPLE_TAGS };
+/** The annotated tags inside the sample's git repo, one starter state each. */
+export const SAMPLE_TAGS: readonly string[] = ['todo-v0', 'todo-v1', 'todo-v2'];
 
-export interface GenerateTodoSandboxOptions {
+export interface UnpackTodoSandboxOptions {
   /** HOME and FACTORY_HOME decide where the sandbox lands (through resolveFactoryPaths). */
   env: NodeJS.ProcessEnv;
+  /** The sample tag to leave checked out: todo-v0, todo-v1 or todo-v2. */
+  sample: string;
 }
 
 export interface TodoSandbox {
-  /** Absolute path of the generated `todo-app` repo. */
+  /** Absolute path of the unpacked `todo-app` repo. */
   path: string;
 }
 
 const SANDBOX_DIR = 'todo-app';
+const STAGING_DIR = `${SANDBOX_DIR}.unpacking`;
+const ZIP_RELATIVE = join('test', 'fixtures', 'sandbox', 'todo-app.zip');
 
-/**
- * Runs git with no user or system config, no hooks, no signing and a fixed identity, so the same
- * input always gives the same object ids. `date` pins both author and committer date.
- */
-function git(cwd: string, env: NodeJS.ProcessEnv, date: string, args: readonly string[]): string {
-  return execFileSync(
-    'git',
-    ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', '-c', 'core.autocrlf=false', ...args],
-    {
-      cwd,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        PATH: env.PATH ?? process.env.PATH ?? '',
-        GIT_CONFIG_GLOBAL: '/dev/null',
-        GIT_CONFIG_NOSYSTEM: '1',
-        GIT_TERMINAL_PROMPT: '0',
-        GIT_AUTHOR_NAME: SANDBOX_IDENTITY.name,
-        GIT_AUTHOR_EMAIL: SANDBOX_IDENTITY.email,
-        GIT_AUTHOR_DATE: date,
-        GIT_COMMITTER_NAME: SANDBOX_IDENTITY.name,
-        GIT_COMMITTER_EMAIL: SANDBOX_IDENTITY.email,
-        GIT_COMMITTER_DATE: date,
-      },
+/** The checked-in zip, found by walking up from this file (it sits in `src/` when run from source, `dist/src/` when built). */
+function fixtureZipPath(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let depth = 0; depth < 6; depth += 1) {
+    const candidate = join(dir, ZIP_RELATIVE);
+    if (existsSync(candidate)) return candidate;
+    dir = dirname(dir);
+  }
+  throw new FactoryError({
+    code: 'sample_fixture_missing',
+    message: `The sample fixture ${ZIP_RELATIVE} was not found next to this checkout.`,
+    where: ZIP_RELATIVE,
+    next: 'Run from a full factory checkout. `npm run sandbox:pack` rebuilds the zip.',
+    exitCode: 2,
+  });
+}
+
+/** Runs git in the unpacked repo with no user or system config and no hooks. */
+function git(cwd: string, env: NodeJS.ProcessEnv, args: readonly string[]): void {
+  execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'core.autocrlf=false', ...args], {
+    cwd,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: {
+      PATH: env.PATH ?? process.env.PATH ?? '',
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_TERMINAL_PROMPT: '0',
     },
-  ).trim();
+  });
 }
 
 const failure = (code: string, message: string, where: string, next: string): FactoryError =>
   new FactoryError({ code, message, where, next, exitCode: 2 });
 
-/** The folders the generator writes through must be real folders: a symlink could point outside the sandbox root. */
+/** The folders the unpack writes through must be real folders: a symlink could point outside the sandbox root. */
 function assertNoSymlink(path: string): void {
   let isLink = false;
   try {
@@ -62,52 +71,47 @@ function assertNoSymlink(path: string): void {
   if (isLink) {
     throw failure(
       'sandbox_symlink',
-      `${path} is a symbolic link. The sandbox generator does not follow links out of the sandbox root.`,
+      `${path} is a symbolic link. The sandbox does not follow links out of the sandbox root.`,
       path,
       'Remove the link, or point FACTORY_HOME at a folder whose cache and sandbox folders are real folders.',
     );
   }
 }
 
-function writeFiles(root: string, files: FileSet): void {
-  for (const [name, content] of Object.entries(files)) {
-    const target = join(root, name);
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, content, { encoding: 'utf8', mode: 0o644 });
-  }
-}
-
 /**
- * Builds the to-do sample app as a local git repo at `<sandbox root>/todo-app`, tagged todo-v0, todo-v1 and
- * todo-v2. It has no remote and is never pushed. An existing sandbox is rebuilt, so two runs end identical.
- * Throws a FactoryError (exit 2) when the path is in a protected folder or the sandbox folder is a symlink.
+ * Unpacks the checked-in zip of the to-do sample's git repo at `<sandbox root>/todo-app` and checks out `sample`
+ * (detached). The repo has the tags todo-v0, todo-v1 and todo-v2, no remote and no node_modules; nothing is
+ * installed or pushed. An existing sandbox folder is replaced, so two runs end identical. The tree is unpacked
+ * beside the target and moved into place, so a failed unpack leaves no half-written sandbox.
+ * Throws a FactoryError (exit 2) for an unknown sample, a protected folder, or a symlink in the sandbox path.
  */
-export function generateTodoSandbox(options: GenerateTodoSandboxOptions): TodoSandbox {
-  const { env } = options;
+export function unpackTodoSandbox(options: UnpackTodoSandboxOptions): TodoSandbox {
+  const { env, sample } = options;
+  if (!SAMPLE_TAGS.includes(sample)) {
+    throw failure('sample_unknown', `Unknown sample "${sample}".`, `--sample ${sample}`, `Use one of: ${SAMPLE_TAGS.join(', ')}.`);
+  }
   const { cacheRoot, sandboxRoot } = resolveFactoryPaths(env);
   const path = join(sandboxRoot, SANDBOX_DIR);
+  const staging = join(sandboxRoot, STAGING_DIR);
 
   assertNotProtectedFolder(path, env);
-  for (const folder of [cacheRoot, sandboxRoot, path]) {
+  for (const folder of [cacheRoot, sandboxRoot, path, staging]) {
     assertNoSymlink(folder);
   }
+  const zipPath = fixtureZipPath();
 
-  rmSync(path, { recursive: true, force: true });
-  mkdirSync(path, { recursive: true });
-
-  const first = SAMPLE_VERSIONS[0];
-  const run = (date: string, ...args: string[]): string => git(path, env, date, args);
-  run(first?.date ?? '', 'init', '--quiet', '--template=', '--initial-branch=main');
-  for (const version of SAMPLE_VERSIONS) {
-    writeFiles(path, version.files);
-    run(version.date, 'add', '--all');
-    run(version.date, 'commit', '--quiet', '--no-verify', '--message', version.message);
-    run(version.date, 'tag', '--annotate', '--message', version.message, version.tag);
+  rmSync(staging, { recursive: true, force: true });
+  mkdirSync(sandboxRoot, { recursive: true });
+  try {
+    unzipSafely({ zipPath, destRoot: staging });
+    // The zip carries no index: rebuild it from HEAD (the newest state), then switch to the tag so files that
+    // exist only in a newer state are removed.
+    git(staging, env, ['reset', '--quiet']);
+    git(staging, env, ['checkout', '--quiet', '--force', '--detach', `refs/tags/${sample}`]);
+    rmSync(path, { recursive: true, force: true });
+    renameSync(staging, path);
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
   }
   return { path };
-}
-
-/** Checks out a sample tag (detached HEAD) in a generated sandbox. */
-export function checkoutSampleTag(sandboxPath: string, tag: string, env: NodeJS.ProcessEnv): void {
-  git(sandboxPath, env, SAMPLE_VERSIONS[0]?.date ?? '', ['checkout', '--quiet', '--detach', tag]);
 }

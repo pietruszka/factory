@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { FactoryError } from '../../src/platform/errors.js';
 import { DEV_HOME_MARKER } from '../../src/dev/home.js';
@@ -107,4 +108,21 @@ export function refusalOf(fn: () => unknown): FactoryError {
 /** True when git finds `pattern` (extended regex) in any file at any of the tags. */
 export function tagsContain(path: string, pattern: string, tags: string[] = SAMPLE_TAGS): boolean {
   return gitSucceeds(path, 'grep', '-q', '-I', '-E', pattern, ...tags);
+}
+
+/** The factory checkout root. */
+export const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
+
+/** The one planned pair: the committed zip of the sample's git repo and its recorded manifest. */
+export const SAMPLE_ZIP_PATH = join(REPO_ROOT, 'test', 'fixtures', 'sandbox', 'todo-app.zip');
+export const SAMPLE_MANIFEST_PATH = join(REPO_ROOT, 'test', 'fixtures', 'sandbox', 'todo-app.manifest.json');
+
+/** The recorded manifest of the fixture zip. Dates use git's `iso-strict` form with a non-UTC offset. */
+export interface SampleManifest {
+  zipSha256: string;
+  identity: { name: string; email: string };
+  dates: Record<string, string>;
+  tags: Record<string, { tagObject: string; commit: string }>;
+  node?: string;
+  npm?: string;
 }
