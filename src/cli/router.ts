@@ -4,6 +4,7 @@ import { FactoryError } from '../platform/errors.js';
 import { EXIT_CODES } from './exit-codes.js';
 import { killCommand } from './kill.js';
 import { resumeCommand } from './resume.js';
+import { statusCommand } from './status.js';
 
 type ParsedValues = ReturnType<typeof parseArgs>['values'];
 
@@ -35,6 +36,8 @@ export interface CommandDef {
   skipGitCheck?: boolean;
   /** Names of the positional arguments, for example `['ticket']`. Exactly one value per name is required; none declared means none accepted. */
   positionals?: readonly string[];
+  /** Names of optional positionals that follow the required ones, for example `['ticket']`. Zero or one value per name. */
+  optionalPositionals?: readonly string[];
   run: (ctx: CommandContext) => CommandResult | Promise<CommandResult>;
 }
 
@@ -51,8 +54,11 @@ const HELP_COMMAND = 'factory help';
 /** Renders the help text listing every command in the table. */
 export function renderHelp(commands: CommandTable): string {
   const names = Object.keys(commands);
-  const label = (name: string): string =>
-    `${name}${(commands[name]?.positionals ?? []).map((positional) => ` <${positional}>`).join('')}`;
+  const label = (name: string): string => {
+    const required = (commands[name]?.positionals ?? []).map((positional) => ` <${positional}>`);
+    const optional = (commands[name]?.optionalPositionals ?? []).map((positional) => ` [${positional}]`);
+    return `${name}${required.join('')}${optional.join('')}`;
+  };
   const width = Math.max(...names.map((name) => label(name).length));
   const rows = names.map((name) => `  ${label(name).padEnd(width)}  ${commands[name]?.description ?? ''}`);
   return [
@@ -77,6 +83,7 @@ export const defaultCommands: CommandTable = {
   },
   kill: killCommand,
   resume: resumeCommand,
+  status: statusCommand,
   help: {
     description: 'Show this help.',
     skipGitCheck: true,
@@ -135,26 +142,29 @@ export interface ParsedCommandArgs {
 
 /**
  * Parses the command's own flags in strict mode and its declared positionals. Refuses unknown flags,
- * a missing positional and a stray argument. A command that declares no positionals accepts none.
+ * a missing positional and a stray argument. A command that declares no positionals accepts none; optional ones may be left out.
  */
 export function parseCommandArgs(def: CommandDef, command: string, rest: string[]): ParsedCommandArgs {
   const names = def.positionals ?? [];
+  const optional = def.optionalPositionals ?? [];
+  const most = names.length + optional.length;
   try {
     const parsed = parseArgs({
       args: rest,
       options: def.options ?? {},
       strict: true,
-      allowPositionals: names.length > 0,
+      allowPositionals: most > 0,
     });
     const positionals = parsed.positionals;
     if (positionals.length < names.length) {
       const missing = names.slice(positionals.length).map((name) => `a ${name}`).join(' and ');
       throw usageError('invalid_usage', `factory ${command} needs ${missing}.`, command);
     }
-    if (positionals.length > names.length) {
+    if (positionals.length > most) {
+      const accepted = [...names, ...optional];
       throw usageError(
         'invalid_usage',
-        `factory ${command} takes only ${names.length === 1 ? `one ${names[0]}` : names.join(' and ')}; got the extra argument "${positionals[names.length]}".`,
+        `factory ${command} takes only ${accepted.length === 1 ? `one ${accepted[0]}` : accepted.join(' and ')}; got the extra argument "${positionals[most]}".`,
         command,
       );
     }

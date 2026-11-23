@@ -18,9 +18,10 @@ factory <command> [arguments] [--json]
 | `version` | Prints `factory <version>` from `package.json`. `factory --version` is the same command. | no |
 | `kill <ticket>` | Stops the run of a ticket in the current checkout and keeps its worktree. See [factory kill](/reference/kill). | yes |
 | `resume <ticket>` | Continues a stopped run of a ticket from its checkpoint, in its existing worktree. Takes `--from <step>` and `--cap +$N`. See [factory resume](/reference/resume). | yes |
+| `status [ticket]` | Lists the active and the 10 most recent runs, or only the runs of one ticket, without writing anything. See [factory status](/reference/status). | no |
 | `help` | Lists the commands. | no |
 
-`help` and `version` answer at once: they skip the git check. Every other command checks git once before it runs. All commands check Node first.
+`help`, `version` and `status` answer at once: they skip the git check. Every other command checks git once before it runs. All commands check Node first.
 
 `factory` with no command prints the usage text and exits 2.
 
@@ -28,7 +29,7 @@ A command accepts only its own flags, its declared positional arguments and the 
 
 ### Positional arguments
 
-A command declares its positionals by name, for example `kill` declares `ticket`. The router requires exactly one value per name. A missing value or an extra one is refused as `invalid_usage` (exit 2) with a message that names the argument, for example `factory kill needs a ticket.` A command that declares no positionals accepts none.
+A command declares its positionals by name, for example `kill` declares `ticket`. The router requires exactly one value per name. A missing value or an extra one is refused as `invalid_usage` (exit 2) with a message that names the argument, for example `factory kill needs a ticket.` A command that declares no positionals accepts none. A command can also declare optional positionals, for example `status` declares `[ticket]`: zero or one value is accepted, and a further one is refused as `invalid_usage`. `help` shows them in square brackets.
 
 Commands run from the folder given to `runCli` as `cwd`, which defaults to the process folder. Tests pass a temp folder instead of changing directory.
 
@@ -62,6 +63,18 @@ factory resume FE-123 --cap "+$2"
 | `--cap +$N` | Add N dollars (`+$2`, `+$0.50`) to the run's dollar cap. Quote it, because `$` is special in a shell. Nothing raises the cap automatically. It adds dollars only: it does not extend the wall-clock cap. |
 
 On success `next_command` is `factory resume FE-123` unless the run is now `passed`. Details, the order of work and the limits: [factory resume](/reference/resume).
+
+### `factory status [ticket]`
+
+```sh
+factory status
+factory status FE-123
+factory status --json
+```
+
+`status` lists runs from the event log. It does not need a checkout or a repo config, and it does not check git. With no ticket it lists every active run and the 10 most recent finished runs, in every repo. With a ticket it lists only that ticket's runs, in every repo. Active runs (stored status is a phase) come first; recent runs follow, newest last event first. Each row shows ticket, repo, flow, stored status, current step, cost marked `reported` or `estimated`, and time since the last event. A run in a phase whose process is gone is marked `stale`; this is only shown, and nothing is written (the status is not changed to `interrupted`). With `--json`, `data` is `{ "schema_version": 1, "rows": [...] }`.
+
+When `factory.db` is missing, it prints an empty list and exits 0 without creating anything. A ticket that is not a slug is refused as `ticket_invalid` (exit 2). Details, the text format and the JSON fields: [factory status](/reference/status).
 
 ## `--json`
 
@@ -112,8 +125,8 @@ An uncaught error in a command is caught at the top and reported as `internal_er
 | `no_command` | 2 | No command given | run `factory help` |
 | `unknown_command` | 2 | The command is not in the table | run `factory help` |
 | `unknown_flag` | 2 | A flag the command does not accept | run `factory help` |
-| `invalid_usage` | 2 | Another argument problem, for example a stray argument | run `factory help` |
-| `ticket_invalid` | 2 | `kill` or `resume` got a ticket that is not a slug | pass a ticket key such as `FE-123` |
+| `invalid_usage` | 2 | Another argument problem, for example a stray argument or a second ticket for `status` | run `factory help` |
+| `ticket_invalid` | 2 | `kill`, `resume` or `status` got a ticket that is not a slug | pass a ticket key such as `FE-123` |
 | `checkout_invalid` | 2 | `kill` or `resume` ran in a folder that is not inside a git checkout | run it from inside the work-repo checkout |
 | `repo_config_missing` | 2 | No repo config matches the checkout (see [Factory config](/reference/factory-config)) | create the repo config file |
 | `run_not_found` | 2 | No running or stopped run for that repo and ticket; nothing was signalled | check the ticket and the checkout |
@@ -128,6 +141,7 @@ An uncaught error in a command is caught at the top and reported as `internal_er
 | `node_too_old` | 2 | Node.js older than 22.13 | install Node.js 22.13 or newer |
 | `git_missing` | 2 | `git --version` could not be run | install git 2.40 or newer |
 | `git_too_old` | 2 | git older than 2.40, or its version could not be read | update git to 2.40 or newer |
+| `db_schema_older` / `db_schema_newer` | 4 | `status` found an event log with another schema version; nothing was written | see [Event log](/reference/event-log) |
 | `internal_error` | 4 | An uncaught error, or output that failed its schema | none; report it as a bug |
 
 The path codes `factory_home_relative` and `protected_folder` (see [VitePress config](/reference/configuration#factory-paths)) use the same envelope when a command reports them.

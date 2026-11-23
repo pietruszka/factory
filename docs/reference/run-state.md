@@ -5,7 +5,7 @@ description: The run state machine and step runner - statuses, legal transitions
 
 # Run state (FAC-20)
 
-A run is always in exactly one status. This page covers the code that moves it between statuses and runs worker steps with checkpoints. The code is `src/run-state/`. It is a library: there is no `factory run` or `status` command yet. [`factory kill`](/reference/kill) moves a run to `killed` through `transition`, and [`factory resume`](/reference/resume) continues a stopped run from its checkpoints.
+A run is always in exactly one status. This page covers the code that moves it between statuses and runs worker steps with checkpoints. The code is `src/run-state/`. It is a library: there is no `factory run` command yet. [`factory status`](/reference/status) only reads runs and shows a run whose process is gone as stale without changing its status. [`factory kill`](/reference/kill) moves a run to `killed` through `transition`, and [`factory resume`](/reference/resume) continues a stopped run from its checkpoints.
 
 `transition` is the only production writer of `runs.status`. It calls the storage helper `updateRunStatus` from the [event log](/reference/event-log) after it has checked that the move is legal. The storage helper itself still accepts any known status; tests may use it to arrange a state, production code must not.
 
@@ -75,5 +75,5 @@ With the optional `cost` argument, `runSteps` also records usage, enforces the d
 
 ## Deferred
 
-- The `factory` commands `run`, `plan`, `approve`, `status` and `outcome` (`kill` is in [factory kill](/reference/kill), `resume` in [factory resume](/reference/resume)); intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
+- The `factory` commands `run`, `plan`, `approve` and `outcome` (`kill` is in [factory kill](/reference/kill), `resume` in [factory resume](/reference/resume), `status` in [factory status](/reference/status)); intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
 - `factory status` (FAC-25).
