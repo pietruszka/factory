@@ -40,6 +40,13 @@ function timeoutNext(ticket: string, elapsedMs: number, capMinutes: number): str
   return `The run used ${Math.floor(elapsedMs / MINUTE_MS)} min and reached its ${capMinutes} min wall-clock cap. The worktree is kept. To continue, raise the cap explicitly: factory resume ${ticket} --cap +$2.`;
 }
 
+/** The dollars spent by every attempt of the run: the sum of the events that carry a `cost_usd`. */
+export function spentUsdOf(reader: RunStateContext['reader'], runId: string): number {
+  return Number(
+    reader.query('SELECT SUM(cost_usd) AS total FROM events WHERE run_id = ? AND cost_usd IS NOT NULL', runId)[0]?.total ?? 0,
+  );
+}
+
 /**
  * Sums the cost of every attempt of the run (events with a `cost_usd`; an event without one adds nothing) and
  * the wall-clock since `runs.started_at`, and compares them with `runs.cap_usd_effective` and `minutes`.
@@ -57,9 +64,7 @@ export function checkCaps({ deps, reader, runId, minutes }: CheckCapsOptions): C
     });
   }
   const ticket = String(run.ticket);
-  const spentUsd = Number(
-    reader.query('SELECT SUM(cost_usd) AS total FROM events WHERE run_id = ? AND cost_usd IS NOT NULL', runId)[0]?.total ?? 0,
-  );
+  const spentUsd = spentUsdOf(reader, runId);
   const elapsedMs = deps.now() - Date.parse(String(run.started_at));
   const capUsd = typeof run.cap_usd_effective === 'number' ? run.cap_usd_effective : undefined;
   if (capUsd !== undefined && spentUsd >= capUsd) {

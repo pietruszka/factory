@@ -55,6 +55,15 @@ function phaseLeft(context: RunStateContext, runId: string, status: RunStatus): 
   return from !== undefined && isPhase(from) ? from : undefined;
 }
 
+/**
+ * The phase a run goes back to when it is resumed: its own status when it sits in a phase, the phase it left
+ * when it stopped, and undefined when that is not known (the stop was not written by `transition`).
+ */
+export function phaseToResume(context: RunStateContext, runId: string): RunStatus | undefined {
+  const { status } = readRun(context, runId);
+  return isPhase(status) ? status : phaseLeft(context, runId, status);
+}
+
 /** The statuses a run can move to from `from`. A stopped run goes back to the phase it left, or to any phase when that is not known. */
 function legalTargets(from: RunStatus, left: RunStatus | undefined): readonly RunStatus[] {
   if (isPhase(from)) {

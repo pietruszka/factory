@@ -70,10 +70,10 @@ Each cap or `cost_missing` stop writes an `events` row of type `run_stop` whose 
 - **Timeout:** the elapsed minutes, for example `30 min`, and that resuming needs an explicit cap, for example `factory resume FE-123 --cap +$2`.
 - **cost_missing:** the step and the fields that were missing.
 
-The `factory resume` command and its `--cap` flag are not built yet (see below); the text names the command the later ticket adds.
+[`factory resume`](/reference/resume) and its `--cap` flag take that next step. `--cap +$N` adds N dollars to `cap_usd_effective`. It does not extend the wall-clock cap: a `timeout` run resumed with `--cap` still measures time from the original `runs.started_at`, so it can stop as `timeout` again at once. There is no minutes flag yet, and `started_at` is never reset.
 
 ## Deferred
 
 - **Turn caps.** No Page gives a default turn count, so no turn cap is enforced and there is no `caps.<flow>.turns` key.
 - **Live usage streaming.** Caps are enforced at step end. The CLIs report usage only at step end, so nothing is checked mid-step; the wall-clock check still catches a hang.
-- The `factory resume` command and `--cap` (FAC-24), the rate-table age warning (FAC-26), Copilot CLI and the Admin API.
+- The rate-table age warning (FAC-26), Copilot CLI and the Admin API.

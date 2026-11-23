@@ -23,7 +23,7 @@ When the recorded pid now runs another command, `termTree` and `killTree` return
 
 ## The worktree is kept
 
-Nothing removes the worktree. After a kill, `runs.status` is `killed`, the worktree folder still exists, and `transition` accepts the move from `killed` back to the phase the run left (see [Run state](/reference/run-state)). The `factory resume` command that uses this is a later ticket (FAC-24); this page does not describe it.
+Nothing removes the worktree. After a kill, `runs.status` is `killed`, the worktree folder still exists, and `transition` accepts the move from `killed` back to the phase the run left (see [Run state](/reference/run-state)). [`factory resume`](/reference/resume) uses this: it stops any process rows that are still open (the same `termTree` then `killTree` walk, without forcing `killed`), then moves the run back to that phase.
 
 ## Second kill
 

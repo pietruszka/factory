@@ -5,7 +5,7 @@ description: The run state machine and step runner - statuses, legal transitions
 
 # Run state (FAC-20)
 
-A run is always in exactly one status. This page covers the code that moves it between statuses and runs worker steps with checkpoints. The code is `src/run-state/`. It is a library: there is no `factory run`, `resume` or `status` command yet. [`factory kill`](/reference/kill) exists and moves a run to `killed` through `transition`.
+A run is always in exactly one status. This page covers the code that moves it between statuses and runs worker steps with checkpoints. The code is `src/run-state/`. It is a library: there is no `factory run` or `status` command yet. [`factory kill`](/reference/kill) moves a run to `killed` through `transition`, and [`factory resume`](/reference/resume) continues a stopped run from its checkpoints.
 
 `transition` is the only production writer of `runs.status`. It calls the storage helper `updateRunStatus` from the [event log](/reference/event-log) after it has checked that the move is legal. The storage helper itself still accepts any known status; tests may use it to arrange a state, production code must not.
 
@@ -65,11 +65,15 @@ With the optional `cost` argument, `runSteps` also records usage, enforces the d
 
 `startRun(context, runInput)` inserts the run in `preflight` through the `runs_one_active` index. While another run of the same repo and ticket is not `passed`, `refused` or `breach`, the insert is refused as `run_already_active` (exit 2); its next action names `factory status` and `factory resume <ticket>`. No second run row is written.
 
+## Continue and resume
+
+`runSteps` skips a step whose latest attempt is `done`; a step whose latest attempt is not done gets a new attempt. `rerun` lists step ids that are started again even though they are done, and `StepSpec.resumeSessionId` passes the CLI session an earlier attempt stored to the first new attempt of a step. `phaseToResume` returns the phase a stopped run left. [`factory resume`](/reference/resume) uses all three.
+
 ## Stub pipeline
 
 `runStubPlan` and `runStubBuild` in `src/run-state/stub-pipeline.ts` exist for tests. They drive one run with a fake worker: `preflight` to `routing` to `planning` with a stub plan step, then `awaiting_approval`. After an approval was recorded by the test (`runStubBuild` refuses with `approval_missing` without one), one stub build step runs, the later phases are entered without work, a stub diff and the report are written, and the run becomes `passed` when `canPassFromReport` allows it, or `needs_human` when it does not. A build step that fails or times out ends the run in the matching stop status.
 
 ## Deferred
 
-- The `factory` commands `run`, `plan`, `approve`, `resume`, `status` and `outcome` (`kill` is in [factory kill](/reference/kill)); intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
-- The `factory resume` command, `--from`, `--cap` and the progress section of `plan.md` (FAC-24), and `factory status` (FAC-25).
+- The `factory` commands `run`, `plan`, `approve`, `status` and `outcome` (`kill` is in [factory kill](/reference/kill), `resume` in [factory resume](/reference/resume)); intake, routing, real gates, verifiers, reviewer and opening a draft pull request.
+- `factory status` (FAC-25).

@@ -163,6 +163,20 @@ function withSecuredWrites(writers: EventLogWriters, dbPath: string): EventLogWr
         after();
       }
     },
+    updateRunBaseCommit: (run_id, base_commit) => {
+      try {
+        writers.updateRunBaseCommit(run_id, base_commit);
+      } finally {
+        after();
+      }
+    },
+    updateRunCap: (run_id, cap_usd_effective) => {
+      try {
+        writers.updateRunCap(run_id, cap_usd_effective);
+      } finally {
+        after();
+      }
+    },
     upsertStep: (input) => {
       try {
         writers.upsertStep(input);

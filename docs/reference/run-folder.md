@@ -40,7 +40,7 @@ The writers add these files:
 | `writeEvidenceDiff({ env, repo, ticket, diff })` | `evidence/diff.patch` |
 | `writeReport({ env, log, runId, worktreePath })` | `report.md` |
 
-`ticket.json`, `plan.md`, `plan.approved`, `decisions.md` and `review.md` are written by later tickets. The report only refers to them. The writers need the folder to exist; call `createRunFolder` first.
+`ticket.json`, `plan.approved`, `decisions.md` and `review.md` are written by later tickets. The report only refers to them. `plan.md` is written by a later ticket too, but `factory resume` already adds a progress section to it (see below). The writers need the folder to exist; call `createRunFolder` first.
 
 The run folder holds no checkout. No writer copies a worktree, a `.git` directory or a source tree. `createRunFolder` refuses a folder that already contains `.git`.
 
@@ -80,6 +80,12 @@ Optional, listed when present and never required in this ticket: `ticket.json`, 
 
 `evidence/diff.patch` and `report.md` are written as given. They are not redacted.
 
+## Plan progress
+
+`writeProgress` (`src/run-folder/progress.ts`) writes a section to the end of `plan.md`, between the markers `<!-- factory:progress:begin -->` and `<!-- factory:progress:end -->`. It lists the current step, the done steps and the last result, and is rewritten each time [`factory resume`](/reference/resume) starts and a step finishes. The rest of the file is left as it was; a missing `plan.md` is created holding only the section.
+
+The progress section is not part of what a person approves. `approvedContent(markdown)` is the file with that section removed, and `approvalHash(markdown)` is the sha256 (hex) of that text. Rewriting the progress never changes the hash; any other edit to `plan.md` does. `factory approve` is a later ticket and does not exist yet.
+
 ## Permissions
 
 Directories are `0700` and files `0600`. Every writer sets `0600` after it writes, also on an existing file. `createRunFolder` on an existing run folder tightens everything in it that the current user owns, and the factory home, `runs/` and `runs/<repo>/` themselves. It does not walk any other folder and does not follow symlinks.
@@ -95,4 +101,4 @@ Each is a `FactoryError` with `where` and `next`.
 
 ## Not in this ticket
 
-A factory command, the inspector, worktree creation (see [Worktrees](/reference/worktrees)), the run state machine and marking a run `passed`, writing `ticket.json`, `plan.md` or `plan.approved`, opening a draft PR, and retention of old prompts.
+A factory command, the inspector, worktree creation (see [Worktrees](/reference/worktrees)), the run state machine and marking a run `passed`, writing `ticket.json`, the plan itself or `plan.approved`, opening a draft PR, and retention of old prompts.
