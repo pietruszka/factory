@@ -21,9 +21,12 @@ factory <command> [arguments] [--json]
 | `resume <ticket>` | Continues a stopped run of a ticket from its checkpoint, in its existing worktree. Takes `--from <step>` and `--cap +$N`. See [factory resume](/reference/resume). | yes |
 | `status [ticket]` | Lists the active and the 10 most recent runs, or only the runs of one ticket, without writing anything. See [factory status](/reference/status). | no |
 | `dev-init --sample <tag>` | Dev only. Unpacks the checked-in to-do sample repo (a zip) under the throwaway factory home's cache folder, checks out the tag and writes a path-matched repo config. Installs nothing. See [Sandbox and dev-init](/reference/sandbox). | no |
+| `dev-approve <ticket>` | Dev only. Records an approval of the current `plan.md` for a fake-worker run of the sandbox in a throwaway factory home. Not `factory approve`. See [Agent runbook](/agent-runbook). | no |
 | `help` | Lists the commands. | no |
 
-`help`, `version`, `status`, `clean` and `dev-init` answer at once: they skip the git check. Every other command checks git once before it runs. All commands check Node first.
+`help`, `version`, `status`, `clean`, `dev-init` and `dev-approve` answer at once: they skip the git check. Every other command checks git once before it runs. All commands check Node first.
+
+The [agent runbook](/agent-runbook) lists the surfaces an agent may use in M1, the failure-detection loop and the stop limits. It stays on the throwaway factory home and the sandbox.
 
 `factory` with no command prints the usage text and exits 2.
 

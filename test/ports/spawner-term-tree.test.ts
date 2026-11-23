@@ -7,14 +7,68 @@ import {
   type ProcessTable,
 } from '../../src/ports/process-table.js';
 import type { RunCommand } from '../../src/ports/run-command.js';
-import { createMacosSpawner } from '../../src/ports/spawner.js';
+import { createMacosSpawner, type SpawnRequest, type Spawner } from '../../src/ports/spawner.js';
 import { createFakeDeps } from '../support/fake-deps.js';
 import { cleanupTempHomes, makeTempHome } from '../support/temp-home.js';
-import { isAlive } from '../support/worker-runtime.js';
+import { descendantsOf, isAlive, waitFor } from '../support/worker-runtime.js';
 
-afterEach(() => {
+/** Bound for reaping a sleeper this file started. Not a test timeout. */
+const REAP_MS = 3_000;
+
+interface TrackedSpawn {
+  pid: number;
+  command: string;
+  spawner: Spawner;
+}
+
+/** Real processes this file started. Fake pids from the scripted `ps` tree are not tracked. */
+const tracked: TrackedSpawn[] = [];
+
+const signalPid = (pid: number, signal: NodeJS.Signals): void => {
+  try {
+    process.kill(pid, signal);
+  } catch {
+    // Already exited.
+  }
+};
+
+/** SIGKILL every sleeper this file still owns, then wait until those pids are gone. */
+async function reapTracked(): Promise<void> {
+  const pending = tracked.splice(0);
+  const failed: TrackedSpawn[] = [];
+  let error: unknown;
+  for (const entry of pending) {
+    try {
+      if (!isAlive(entry.pid)) continue;
+      const descendants = await descendantsOf(entry.pid);
+      const result = await entry.spawner.killTree(entry.pid, entry.command);
+      if (result === 'killed') {
+        for (const pid of [...descendants].reverse()) signalPid(pid, 'SIGKILL');
+        signalPid(entry.pid, 'SIGKILL');
+        await waitFor(() => [entry.pid, ...descendants].every((pid) => !isAlive(pid)), REAP_MS);
+      }
+    } catch (caught) {
+      failed.push(entry);
+      error ??= caught;
+    }
+  }
+  tracked.push(...failed);
+  if (error !== undefined) throw error;
+}
+
+async function trackSpawn(spawner: Spawner, request: SpawnRequest) {
+  const child = await spawner.spawn({ ...request, cwd: request.cwd ?? makeTempHome() });
+  tracked.push({ pid: child.pid, command: [request.command, ...request.args].join(' '), spawner });
+  return child;
+}
+
+afterEach(async () => {
   vi.restoreAllMocks();
-  cleanupTempHomes();
+  try {
+    await reapTracked();
+  } finally {
+    cleanupTempHomes();
+  }
 });
 
 const COMMAND = 'example-worker --print';
@@ -69,7 +123,7 @@ describe('termTree and killTree walk the tree children first', () => {
 describe('the macOS termTree', () => {
   const sleeper = async () => {
     const spawner = createMacosSpawner({ processTable: createMacosProcessTable(), deps: createFakeDeps() });
-    const child = await spawner.spawn({ command: '/bin/sleep', args: ['30'], cwd: makeTempHome() });
+    const child = await trackSpawn(spawner, { command: '/bin/sleep', args: ['30'] });
     return { spawner, child };
   };
 
@@ -83,10 +137,22 @@ describe('the macOS termTree', () => {
 
   test('reports a child that already exited as gone', async () => {
     const spawner = createMacosSpawner({ processTable: createMacosProcessTable(), deps: createFakeDeps() });
-    const child = await spawner.spawn({ command: '/usr/bin/true', args: [], cwd: makeTempHome() });
+    const child = await trackSpawn(spawner, { command: '/usr/bin/true', args: [] });
     await child.exit;
 
     await expect(spawner.termTree(child.pid, '/usr/bin/true')).resolves.toBe('gone');
+  });
+
+  test('a timed-out or failed term-tree sleeper is reaped', async () => {
+    const { child } = await sleeper();
+    const descendants = await descendantsOf(child.pid);
+    expect(isAlive(child.pid)).toBe(true);
+
+    // The body stops here, as a timeout or a throw would, and the shared reap runs in this test.
+    await reapTracked();
+
+    expect(isAlive(child.pid)).toBe(false);
+    expect(descendants.every((pid) => !isAlive(pid))).toBe(true);
   });
 
   test('when the recorded pid no longer matches the recorded command, termTree and killTree return pid_reused and the fake or macOS spawner sends no signal', async () => {
