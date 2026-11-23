@@ -84,7 +84,7 @@ Internal links are checked by `docs:build`. A link to a page you removed will fa
 
 Rules:
 
-- **Cache folder (D-39).** Worktrees and the sandbox live in the cache root, not under the home. Config, `factory.db`, run folders and baseline reports stay under the home. The tables, pragmas and errors of `factory.db` are on [Event log](/reference/event-log). The worktree layout, modes and errors are on [Worktrees](/reference/worktrees).
+- **Cache folder (D-39).** Worktrees and the sandbox live in the cache root, not under the home. Config, `factory.db`, run folders and baseline reports stay under the home. The tables, pragmas and errors of `factory.db` are on [Event log](/reference/event-log). The worktree layout, modes and errors are on [Worktrees](/reference/worktrees). The to-do sample app that the generator builds in `sandboxRoot`, and `factory dev-init --sample`, are on [Sandbox and dev-init](/reference/sandbox); `baselineReportsDir` is not moved by either.
 - **`FACTORY_HOME`.** Must be an absolute path. A leading `~/` is expanded against `HOME`. A relative value is refused with code `factory_home_relative`. An empty value counts as unset.
 - **`XDG_CACHE_HOME` is ignored.** The cache root never depends on it.
 - **Protected folders.** `home`, `cacheRoot`, `worktreesRoot` and `sandboxRoot` are each checked. A path at or inside `<HOME>/Documents`, `<HOME>/Desktop` or `<HOME>/Downloads` is refused with code `protected_folder`. The check follows symlinks, so a link outside those folders that points into them is refused too. On macOS the comparison ignores case. `<HOME>/Documentsx` is not a protected folder. The error's `where` is the path as given, and its `next` names `~/.cache/factory`.
