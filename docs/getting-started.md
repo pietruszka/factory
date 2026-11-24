@@ -5,7 +5,7 @@ description: Clone the factory repository and run the documentation site locally
 
 # Getting started
 
-The `factory` CLI is only a shell so far (`version`, `help`); `npm run build` produces it in `dist/`. The commands in `package.json` build and serve this documentation site, and check and test the TypeScript code under `src/` (see [npm scripts](/reference/scripts) and [Testing](/reference/testing)).
+The `factory` CLI is the M1 foundation (`version`, `help`, `status`, `kill`, `resume`, `clean`, `dev-init`, `dev-approve`); `npm run build` produces it in `dist/`. The commands in `package.json` build and serve this documentation site, and check and test the TypeScript code under `src/` (see [npm scripts](/reference/scripts) and [Testing](/reference/testing)).
 
 ## Access
 

@@ -6,95 +6,64 @@ description: What is in the factory repository, and how the documentation site i
 # Architecture
 
 ::: info
-[End-to-end flow](/flow) is the intended product, taken from the MVP requirements. The sections below describe this repository's current contents, including the first `src/` and `test/` files. The docs pipeline is not the full product architecture.
+[End-to-end flow](/flow) is the intended product, taken from the MVP requirements. The sections below describe this repository's current contents. The docs pipeline is not the full product architecture.
 :::
 
 ## What the repository contains
 
-Before this documentation was added, the repository was a single commit whose only file was `README.md`, containing the heading `factory` and nothing else. The repository now includes initial TypeScript source and tests for dev-home guardrails.
-
-After adding docs and the first source files, the tracked tree is:
+The repository holds the TypeScript `factory` CLI (M1 foundation), its tests, agent instructions, and this VitePress site.
 
 ```text
 .
+├── .agents/skills/               # project agent skills (factory-change, factory-test, factory-docs)
 ├── .github/workflows/docs.yml    # build, and deploy to GitHub Pages
-├── .gitignore                    # node_modules and VitePress output
+├── AGENTS.md                     # always-on instructions for coding agents on this repo
 ├── README.md                     # GitHub landing page; points here
-├── package.json                  # docs scripts + typecheck, test, dev:init, probe
-├── package-lock.json             # npm lockfile
-├── tsconfig.json                 # TypeScript config (strict, NodeNext)
-├── vitest.config.ts              # test setup, including network block
+├── package.json                  # CLI build, gates, docs scripts, sandbox helpers
 ├── src/
-│   ├── adapters/
-│   │   ├── step-result.ts        # zod schema for normalized adapter results
-│   │   ├── cursor-agent.ts       # Cursor adapter parser for recorded output
-│   │   └── opencode.ts           # OpenCode adapter parser for recorded output
-│   ├── dev/
-│   │   ├── dev-init.ts           # npm run dev:init entry
-│   │   ├── home.ts               # throwaway FACTORY_HOME resolver and marker guard
-│   │   ├── live-guard.ts         # FACTORY_LIVE and budget guard
-│   │   ├── private-guard.ts      # reject private-path access
-│   │   └── run-as-main.ts        # shared CLI main-module guard
-│   └── probe/
-│       ├── probe.ts              # npm run probe entry and orchestration
-│       ├── prompt.ts             # fixed prompt for CLI probes
-│       ├── redact.ts             # probe fixture redaction helpers
-│       └── runners.ts            # per-CLI runner specs and execution
-├── test/
-│   ├── dev/
-│   │   ├── dev-init.test.ts
-│   │   ├── home.test.ts
-│   │   ├── live-guard.test.ts
-│   │   ├── network-block.test.ts
-│   │   └── private-guard.test.ts
-│   ├── contract/
-│   │   ├── adapter-contract.ts   # shared adapter contract suite
-│   │   └── adapter-contract.test.ts
-│   ├── probe/
-│   │   └── probe.test.ts
-│   ├── setup/
-│   │   └── network-block.ts      # rejects non-localhost fetch/socket calls in tests
-│   ├── support/
-│   │   └── fake-cli.ts           # fixture replay helper for fake CLI processes
-│   └── fixtures/
-│       └── cli/
-│           ├── pins.json         # per-CLI pinned versions used by contract tests
-│           ├── cursor-agent/
-│           │   ├── probe.json
-│           │   └── cases/        # derived contract cases from FAC-3 recording
-│           └── opencode/
-│               ├── probe.json
-│               └── cases/        # derived contract cases from FAC-3 recording
-└── docs/
-    ├── index.md                  # home page
-    ├── getting-started.md
-    ├── flow.md                   # intended product flow, from the requirements
+│   ├── adapters/                 # worker CLI output parsers
+│   ├── cli/                      # factory commands (version, help, status, kill, resume, clean, dev-*)
+│   ├── config/                   # factory and repo config loaders
+│   ├── cost/                     # caps and usage
+│   ├── dev/                      # throwaway FACTORY_HOME guards
+│   ├── event-log/                # SQLite event log
+│   ├── kill/ · resume/ · status/ # command implementations
+│   ├── platform/                 # Deps, paths, errors
+│   ├── ports/                    # outside-system seams + recording fakes
+│   ├── preflight/                # config drift and toolchain checks
+│   ├── probe/                    # CLI probe harness
+│   ├── retention/                # factory clean
+│   ├── run-folder/ · run-state/  # run artefacts and state machine
+│   ├── sandbox/                  # sample to-do unpack
+│   ├── worker-runtime/           # worker steps + fake worker
+│   ├── worktree/                 # git worktree manager
+│   └── write-scope/              # role write scopes
+├── test/                         # Vitest suite (L3 under test/l3/)
+├── scripts/                      # L3 runner, sample gates, sandbox pack
+└── docs/                         # this site (VitePress, base /factory/)
+    ├── agent-runbook.md          # sandbox-only agent debug loop (M1)
+    ├── flow.md                   # MVP requirements (not a code map)
     ├── architecture.md
-    ├── 404.md                    # document title for a missing route
-    ├── reference/
-    │   ├── scripts.md
-    │   ├── configuration.md
-    │   └── pages-workflow.md
-    └── .vitepress/
-        ├── config.ts             # site config, including base: /factory/
-        └── theme/
-            ├── index.ts          # not-found slot on the default theme
-            ├── mermaid.css       # keep Mermaid HTML labels inside their nodes
-            └── not-found.css
+    └── reference/                # CLI, ports, testing, run-state, …
 ```
 
 Generated directories `docs/.vitepress/cache` and `docs/.vitepress/dist` appear after a local build. They are not part of the source tree.
 
+## Agent instructions
+
+Coding agents that change this repository should follow root [AGENTS.md](https://github.com/pietruszka/factory/blob/main/AGENTS.md) and the skills under `.agents/skills/`. That `AGENTS.md` is for work **on** the repo; it is not the product-runtime file named in [End-to-end flow](/flow). Sandbox debugging of the factory itself uses the [Agent runbook](/agent-runbook).
+
 ## What is not here
 
-These are absent. Do not document them as if they existed. [End-to-end flow](/flow) records the requirements for a factory CLI. It is not a map of code in this tree:
+These are absent. Do not document them as if they existed. [End-to-end flow](/flow) records the requirements for the full factory product. It is not a map of every command in that page:
 
 - A license file (`LICENSE` / `COPYING`)
 - A stated copyright holder
-- `AGENTS.md`, issue templates, or other contributor docs
+- Issue templates
 - CI other than `.github/workflows/docs.yml`
 - A GitHub repository description, homepage, or topics
 - A published package on npm
+- Flow A/E/F/H run commands (`factory plan`, `factory run`, `factory approve`, …) — not in M1
 
 `README.md` is the GitHub project landing page. It links into `docs/` and does not repeat these pages. The canonical copy of the longer guide is this site.
 
@@ -141,6 +110,6 @@ The dev server still prints a localhost origin. Append `/factory/` when you open
 
 `lastUpdated: true` asks VitePress to read each page's last git commit. The build job checks out the full history (`fetch-depth: 0`) so those dates are available in CI. A page that has never been committed has no date, which is expected while writing it locally.
 
-### Pages that are intentionally missing
+### Reference coverage
 
-There is no API reference or configuration reference for an application, because none of those exist. The commands and folders in [End-to-end flow](/flow) are requirements, not code in this tree. The reference section documents the docs toolchain only: [npm scripts](/reference/scripts), [VitePress config](/reference/configuration), and the [Pages workflow](/reference/pages-workflow).
+The [reference](/reference/cli) section documents the shipped CLI and library surfaces (commands, ports, testing, run state, and related tickets). Commands named only in [End-to-end flow](/flow) and listed under “Not in M1” in the [Agent runbook](/agent-runbook) are requirements, not code in this tree.
