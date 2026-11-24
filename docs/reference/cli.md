@@ -5,7 +5,7 @@ description: Commands, the --json envelope, exit codes and error codes of the fa
 
 # The factory command
 
-`factory` is the command line entry point. After `npm run build`, `npm link` (run once, by hand) puts it on your `PATH`. Without linking, run `node dist/src/cli/main.js`.
+`factory` is the command line entry point. After `npm run build`, `npm link` (run once, by hand) puts it on your `PATH`. Without linking, run `node dist/src/cli/main.js`. While changing the CLI, run `npm run build:watch` so `dist/` stays up to date without rebuilding by hand.
 
 ```sh
 factory <command> [arguments] [--json]
