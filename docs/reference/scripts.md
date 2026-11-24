@@ -11,6 +11,7 @@ description: The only npm scripts in the factory repository.
 | --- | --- | --- |
 | `typecheck` | `tsc --noEmit` | Strict TypeScript check of `src/`, `test/` and `scripts/` |
 | `build` | `tsc -p tsconfig.build.json` | Compiles `src/` to `dist/` (git-ignored); `dist/src/cli/main.js` is the `factory` bin |
+| `build:watch` | `npm run build -- --watch` | Same as `build`, leaves `tsc` running and recompiles when `src/` changes |
 | `lint` | `eslint src` | ESLint over `src/`: clock and randomness ban (P-14), no hard-coded home paths (NFR-33) |
 | `test` | `vitest run` | All tests |
 | `test:l3` | `tsx scripts/run-layer.ts` | Only the `test/l3/` folder, with the time printed and a 120 s budget |
@@ -31,12 +32,17 @@ npm run lint
 npm test
 npm run test:l3
 npm run build
+npm run build:watch
 npm run docs:build
 ```
 
 ## `build`
 
 Compiles `src/` with `tsconfig.build.json` into `dist/`. `package.json` points `bin.factory` at `dist/src/cli/main.js`, so after a build `npm link` (run once, by hand) installs the `factory` command. Pass `-- --outDir <dir>` to build somewhere else. `dist/` is ignored by git, lint and tests. See [The factory command](/reference/cli).
+
+## `build:watch`
+
+Runs `npm run build -- --watch`: the same `tsc` command as `build`, with TypeScript’s `--watch` so edits under `src/` recompile into `dist/` without another manual build. Leave it running while you exercise the linked `factory` command.
 
 ## `lint`
 
