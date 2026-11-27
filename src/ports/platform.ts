@@ -130,15 +130,16 @@ export function createLinuxPlatform(
   return {
     os: 'linux',
     keychain: {
-      get: async (item) => {
-        throw new FactoryError({
-          code: 'secret_missing',
-          message: `The keychain item "${item}" cannot be read on Linux.`,
-          where: `keychain item ${item}`,
-          next: `use an env: secret ref instead of keychain: ${item}`,
-          exitCode: 2,
-        });
-      },
+      get: (item) =>
+        Promise.reject(
+          new FactoryError({
+            code: 'secret_missing',
+            message: `The keychain item "${item}" cannot be read on Linux.`,
+            where: `keychain item ${item}`,
+            next: `use an env: secret ref instead of keychain: ${item}`,
+            exitCode: 2,
+          }),
+        ),
     },
     clipboard: {
       read: async () => {
