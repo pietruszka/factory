@@ -208,9 +208,14 @@ export function statusFixture(): StatusFixture {
 }
 
 /** `factory status ...` from a folder that is not a git checkout, with the fixture's clock and process table. */
-export function statusCli(fx: StatusFixture, args: string[]): Promise<CliRun> {
+export function statusCli(
+  fx: StatusFixture,
+  args: string[],
+  overrides: { os?: NodeJS.Platform } = {},
+): Promise<CliRun> {
   return runCapture(['status', ...args], {
     cwd: fx.sb.tmp,
+    ...(overrides.os !== undefined ? { os: overrides.os } : {}),
     commands: { status: createStatusCommand({ deps: fx.deps, processTable: fx.processTable }) },
   });
 }

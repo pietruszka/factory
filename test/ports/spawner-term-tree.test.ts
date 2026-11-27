@@ -2,12 +2,12 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import {
   createFakeProcessTable,
-  createMacosProcessTable,
+  createPosixProcessTable,
   type FakeProcessTable,
   type ProcessTable,
 } from '../../src/ports/process-table.js';
 import type { RunCommand } from '../../src/ports/run-command.js';
-import { createMacosSpawner, type SpawnRequest, type Spawner } from '../../src/ports/spawner.js';
+import { createPosixSpawner, type SpawnRequest, type Spawner } from '../../src/ports/spawner.js';
 import { createFakeDeps } from '../support/fake-deps.js';
 import { cleanupTempHomes, makeTempHome } from '../support/temp-home.js';
 import { descendantsOf, isAlive, waitFor } from '../support/worker-runtime.js';
@@ -92,7 +92,7 @@ function interceptSignals(): Array<{ pid: number; signal: string | number | unde
 function treeSetup(wrap: (table: FakeProcessTable) => ProcessTable = (table) => table) {
   const processTable = createFakeProcessTable();
   processTable.record({ pid: 5000, command: COMMAND, startedAt: 0 });
-  const spawner = createMacosSpawner({ processTable: wrap(processTable), deps: createFakeDeps(), run: fakePs });
+  const spawner = createPosixSpawner({ processTable: wrap(processTable), deps: createFakeDeps(), run: fakePs });
   return { spawner, processTable };
 }
 
@@ -122,7 +122,7 @@ describe('termTree and killTree walk the tree children first', () => {
 
 describe('the macOS termTree', () => {
   const sleeper = async () => {
-    const spawner = createMacosSpawner({ processTable: createMacosProcessTable(), deps: createFakeDeps() });
+    const spawner = createPosixSpawner({ processTable: createPosixProcessTable(), deps: createFakeDeps() });
     const child = await trackSpawn(spawner, { command: '/bin/sleep', args: ['30'] });
     return { spawner, child };
   };
@@ -136,7 +136,7 @@ describe('the macOS termTree', () => {
   });
 
   test('reports a child that already exited as gone', async () => {
-    const spawner = createMacosSpawner({ processTable: createMacosProcessTable(), deps: createFakeDeps() });
+    const spawner = createPosixSpawner({ processTable: createPosixProcessTable(), deps: createFakeDeps() });
     const child = await trackSpawn(spawner, { command: '/usr/bin/true', args: [] });
     await child.exit;
 

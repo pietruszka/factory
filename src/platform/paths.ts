@@ -109,7 +109,7 @@ export function assertNotProtectedFolder(
     if (isWithinOrSamePath(resolveComparablePath(join(userHome, folder), platform), comparable)) {
       throw failure(
         'protected_folder',
-        `${path} is inside the protected folder ~/${folder}. macOS blocks background tools there.`,
+        `${path} is inside the protected folder ~/${folder}.`,
         path,
         `Use ${DEFAULT_CACHE_DIR} or another folder outside Documents, Desktop and Downloads.`,
       );

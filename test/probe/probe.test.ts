@@ -1074,15 +1074,18 @@ describe('opencode 2.x probe runner', () => {
     expect(existsSync(join(markerDir, 'spawned'))).toBe(false);
   });
 
-  test('refuses an opencode sandbox inside a macOS privacy-protected folder', () => {
+  test('refuses an opencode sandbox inside a macOS privacy-protected folder on darwin only', () => {
     const { env, userHome } = fakeOpenCodeEnv(buildOpenCodeCliScript({}));
     expect(isMacPrivacyProtectedPath(join(userHome, 'Documents', 'x'), userHome)).toBe(true);
     expect(isMacPrivacyProtectedPath(join(userHome, 'Desktop'), userHome)).toBe(true);
     expect(isMacPrivacyProtectedPath(join(userHome, 'Downloads', 'a', 'b'), userHome)).toBe(true);
     expect(isMacPrivacyProtectedPath(join(userHome, 'DocumentsArchive'), userHome)).toBe(false);
     expect(isMacPrivacyProtectedPath(join(userHome, '.factory-dev', 'sandbox'), userHome)).toBe(false);
-    const outcome = runProbeCli(openCodeSpec(join(userHome, 'Documents', 'sandbox')), env);
-    expect(outcome.errorMessage).toMatch(/privacy-protected folder/);
+    const cwd = join(userHome, 'Documents', 'sandbox');
+    const onDarwin = runProbeCli(openCodeSpec(cwd), env, undefined, 'darwin');
+    expect(onDarwin.errorMessage).toMatch(/privacy-protected folder/);
+    const onLinux = runProbeCli(openCodeSpec(cwd), env, undefined, 'linux');
+    expect(onLinux.errorMessage ?? '').not.toMatch(/privacy-protected folder/);
   });
 
   test('waits until the background service lists the probe model before running', () => {

@@ -6,8 +6,8 @@ import { flowCaps } from '../cost/caps.js';
 import { openEventLog, openEventLogReadOnly } from '../event-log/open.js';
 import { createSystemDeps } from '../platform/deps.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
-import { createMacosProcessTable } from '../ports/process-table.js';
-import { createMacosSpawner } from '../ports/spawner.js';
+import { createPosixProcessTable } from '../ports/process-table.js';
+import { createPosixSpawner } from '../ports/spawner.js';
 import { resumeRun, runNotFound, type ResumeRunOptions } from '../resume/resume-run.js';
 import { isSlug, runFolderPath } from '../run-folder/path.js';
 import { findLatestRun } from '../run-state/find-run.js';
@@ -80,8 +80,8 @@ export function createResumeCommand(options: Partial<ResumeCommandOptions> = {})
       try {
         const run = findLatestRun(reader, repo, ticket);
         if (run === undefined) throw runNotFound(repo, ticket);
-        const processTable = options.processTable ?? createMacosProcessTable();
-        const spawner = options.spawner ?? createMacosSpawner({ processTable, deps });
+        const processTable = options.processTable ?? createPosixProcessTable();
+        const spawner = options.spawner ?? createPosixSpawner({ processTable, deps });
         const config = loadConfig({ env, repoPath: checkout }).config;
         const outcome = await resumeRun({
           env,

@@ -212,12 +212,17 @@ export function runProbeCli(
   spec: ProbeRunnerSpec,
   env: NodeJS.ProcessEnv,
   deps: Deps = createSystemDeps(),
+  os: NodeJS.Platform = process.platform,
 ): ProbeRunnerOutcome {
   const forbidden = FORBIDDEN_CLI_FLAGS[spec.cli].find((flag) => spec.args.includes(flag));
   if (forbidden) {
     return refusalOutcome(`forbidden flag: ${forbidden}`);
   }
-  if (spec.cli === 'opencode' && isMacPrivacyProtectedPath(spec.cwd, env.HOME)) {
+  if (
+    os === 'darwin' &&
+    spec.cli === 'opencode' &&
+    isMacPrivacyProtectedPath(spec.cwd, env.HOME)
+  ) {
     return refusalOutcome(
       'opencode sandbox is inside a macOS privacy-protected folder (~/Documents, ~/Desktop or ~/Downloads); ' +
         'the OpenCode background service cannot read it. Put FACTORY_HOME elsewhere.',

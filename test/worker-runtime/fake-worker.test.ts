@@ -3,8 +3,8 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { createMacosProcessTable } from '../../src/ports/process-table.js';
-import { createMacosSpawner } from '../../src/ports/spawner.js';
+import { createPosixProcessTable } from '../../src/ports/process-table.js';
+import { createPosixSpawner } from '../../src/ports/spawner.js';
 import type { RunningStep, StepRequest, StepResult } from '../../src/worker-runtime/types.js';
 import { createFakeWorkerRuntime, loadScenario } from '../support/fake-worker.js';
 import { createFakeDeps } from '../support/fake-deps.js';
@@ -28,8 +28,8 @@ function setup(scenarioName: string) {
   const sandbox = runtimeSandbox();
   mkdirSync(sandbox.worktree, { recursive: true });
   const deps = createFakeDeps({ start: 1000 });
-  const processTable = createMacosProcessTable();
-  const spawner = createMacosSpawner({ processTable, deps });
+  const processTable = createPosixProcessTable();
+  const spawner = createPosixSpawner({ processTable, deps });
   const runtime = createFakeWorkerRuntime({
     scenario: loadScenario(join(SCENARIOS, `${scenarioName}.json`)),
     spawner,

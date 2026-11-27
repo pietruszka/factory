@@ -5,8 +5,8 @@ import { killRun } from '../kill/kill-run.js';
 import { createSystemDeps } from '../platform/deps.js';
 import type { FactoryError } from '../platform/errors.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
-import { createMacosProcessTable } from '../ports/process-table.js';
-import { createMacosSpawner } from '../ports/spawner.js';
+import { createPosixProcessTable } from '../ports/process-table.js';
+import { createPosixSpawner } from '../ports/spawner.js';
 import { runFolderPath, isSlug } from '../run-folder/path.js';
 import { findOpenRun } from '../run-state/find-run.js';
 import { worktreePath } from '../worktree/path.js';
@@ -46,8 +46,8 @@ export const killCommand: CommandDef = {
     try {
       const runId = findOpenRun(reader, repo, ticket)?.runId;
       if (runId === undefined) throw runNotFound(repo, ticket);
-      const processTable = createMacosProcessTable();
-      const spawner = createMacosSpawner({ processTable, deps });
+      const processTable = createPosixProcessTable();
+      const spawner = createPosixSpawner({ processTable, deps });
       const result = await killRun({ env, deps, log, reader, runId, spawner, processTable });
 
       const worktree = worktreePath(env, repo, ticket);
