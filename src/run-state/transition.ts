@@ -1,3 +1,4 @@
+import { readPayload } from '../event-log/payloads.js';
 import { NON_RESUMABLE_RUN_STATUSES } from '../event-log/schema.js';
 import { FactoryError } from '../platform/errors.js';
 import { runFolderPath } from '../run-folder/path.js';
@@ -51,8 +52,8 @@ function phaseLeft(context: RunStateContext, runId: string, status: RunStatus): 
   if (last?.status !== status || typeof last.payload_json !== 'string') {
     return undefined;
   }
-  const from = (JSON.parse(last.payload_json) as { from?: RunStatus }).from;
-  return from !== undefined && isPhase(from) ? from : undefined;
+  const from = readPayload(last, 'run_status').from;
+  return isPhase(from) ? from : undefined;
 }
 
 /**

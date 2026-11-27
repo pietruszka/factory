@@ -164,7 +164,13 @@ export function statusFixture(): StatusFixture {
         usage_source: cost.source,
       });
     }
-    log.appendEvent({ run_id: seed.runId, type: 'run_status', started_at: iso(lastEvent), status: seed.status });
+    log.appendEvent({
+      run_id: seed.runId,
+      type: 'run_status',
+      started_at: iso(lastEvent),
+      status: seed.status,
+      payload: { from: seed.status as RunInput['status'], to: seed.status as RunInput['status'] },
+    });
     (seed.steps ?? []).forEach((step, index) => {
       log.upsertStep({
         run_id: seed.runId,

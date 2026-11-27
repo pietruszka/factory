@@ -1,5 +1,6 @@
-import { NON_RESUMABLE_RUN_STATUSES } from '../event-log/schema.js';
 import type { EventLogReadOnly } from '../event-log/open.js';
+import { readPayload } from '../event-log/payloads.js';
+import { NON_RESUMABLE_RUN_STATUSES } from '../event-log/schema.js';
 import { refuse } from './errors.js';
 import { allowedPathsOverlap } from './overlap.js';
 
@@ -34,8 +35,8 @@ function activeRuns(reader: EventLogReadOnly, runId: string): ActiveRun[] {
     runId,
   );
   return rows.map((row) => {
-    const payload = typeof row.payload_json === 'string' ? (JSON.parse(row.payload_json) as { allowed_paths?: unknown }) : {};
-    const allowed = Array.isArray(payload.allowed_paths) ? payload.allowed_paths.map(String) : undefined;
+    const allowed =
+      typeof row.payload_json === 'string' ? readPayload(row, 'worktree_created').allowed_paths : undefined;
     return { runId: String(row.run_id), allowedPaths: allowed };
   });
 }
