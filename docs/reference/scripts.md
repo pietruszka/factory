@@ -16,6 +16,7 @@ description: The only npm scripts in the factory repository.
 | `test` | `vitest run` | All tests |
 | `test:l3` | `tsx scripts/run-layer.ts` | Only the `test/l3/` folder, with the time printed and a 120 s budget |
 | `test:sample-gates` | `tsx scripts/sample-gates.ts` | Opt-in, needs network: installs the to-do sample in a temp folder and runs its gates. Not part of `test` or `test:l3`. See [Sandbox](/reference/sandbox) |
+| `check` | `typecheck && lint && test && test:l3 && build && docs:build` | All quality gates in order; stops at the first failure |
 | `sandbox:pack` | `tsx scripts/pack-todo-sandbox.ts` | Dev only: rebuilds the to-do sample zip and manifest from `scripts/sandbox/todo-app/`. See [Sandbox](/reference/sandbox) |
 | `dev:init` | `tsx src/dev/dev-init.ts` | Creates a throwaway factory home |
 | `probe` | `tsx src/probe/probe.ts` | Live CLI probe (needs `FACTORY_LIVE`) |
@@ -27,6 +28,7 @@ description: The only npm scripts in the factory repository.
 Run them with npm from the repository root:
 
 ```sh
+npm run check
 npm run typecheck
 npm run lint
 npm test
@@ -35,6 +37,10 @@ npm run build
 npm run build:watch
 npm run docs:build
 ```
+
+## `check`
+
+Runs the gates in order: `typecheck`, `lint`, `test`, `test:l3`, `build`, `docs:build`. It stops at the first failure and exits with that gate's exit code. When every gate passes it exits 0. CI runs the same gates (without `docs:build`, which stays on the docs workflow) on every pull request and every push to `main`.
 
 ## `build`
 
@@ -50,7 +56,7 @@ Runs ESLint with `eslint.config.js` over `src/`. It uses the `recommended` rules
 
 ## `test`
 
-Runs every test once with Vitest 5.1.2, capped at two workers. Temp homes, the network guard and the L3 folder are described in [Testing](/reference/testing).
+Runs every test once with Vitest 5.1.2 on the `forks` pool, capped at two workers. Temp homes, the network guard and the L3 folder are described in [Testing](/reference/testing).
 
 ## `test:l3`
 

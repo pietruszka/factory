@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:l3": "tsx scripts/run-layer.ts",
     "test:sample-gates": "tsx scripts/sample-gates.ts",
+    "check": "npm run typecheck && npm run lint && npm test && npm run test:l3 && npm run build && npm run docs:build",
     "sandbox:pack": "tsx scripts/pack-todo-sandbox.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
