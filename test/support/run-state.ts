@@ -2,8 +2,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import type { RunInput } from '../../src/event-log/open.js';
-import { createMacosProcessTable } from '../../src/ports/process-table.js';
-import { createMacosSpawner } from '../../src/ports/spawner.js';
+import { createPosixProcessTable } from '../../src/ports/process-table.js';
+import { createPosixSpawner } from '../../src/ports/spawner.js';
 import { createRunFolder } from '../../src/run-folder/create.js';
 import { writeReport } from '../../src/run-folder/report.js';
 import { runStubBuild, runStubPlan } from '../../src/run-state/stub-pipeline.js';
@@ -108,8 +108,8 @@ export function runStateFixture(opts: { run?: Partial<RunInput> } = {}): RunStat
   const runFolder = createRunFolder({ env: fx.sb.env, repo: 'example-frontend', ticket: 'FE-123' });
   const worktree = fx.expectedPath();
   const context: RunStateContext = { env: fx.sb.env, deps: fx.deps, log: fx.log, reader: fx.reader };
-  const processTable = createMacosProcessTable();
-  const spawner = createMacosSpawner({ processTable, deps: fx.deps });
+  const processTable = createPosixProcessTable();
+  const spawner = createPosixSpawner({ processTable, deps: fx.deps });
 
   return {
     fx,

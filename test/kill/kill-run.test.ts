@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { killRun } from '../../src/kill/kill-run.js';
-import { createFakeProcessTable, createMacosProcessTable } from '../../src/ports/process-table.js';
-import { createMacosSpawner, type Spawner } from '../../src/ports/spawner.js';
+import { createFakeProcessTable, createPosixProcessTable } from '../../src/ports/process-table.js';
+import { createPosixSpawner, type Spawner } from '../../src/ports/spawner.js';
 import { transition } from '../../src/run-state/transition.js';
 import { createWorktree } from '../../src/worktree/create.js';
 import { eventsOf } from '../support/worktree-fixture.js';
@@ -39,7 +39,7 @@ describe('killRun on a run whose process row is a recycled pid', () => {
     createWorktree(state.fx.options());
     state.arrange('building');
     const processTable = createFakeProcessTable();
-    const spawner = createMacosSpawner({ processTable, deps: state.fx.deps });
+    const spawner = createPosixSpawner({ processTable, deps: state.fx.deps });
     // A real child that this test starts under the temp home; the fake table then claims its pid was recycled.
     const child = await spawner.spawn({ command: '/bin/sleep', args: ['30'], cwd: state.worktree });
     state.fx.log.appendProcess({ run_id: 'run-1', step: 'implement', pid: child.pid, command: '/bin/sleep 30' });
@@ -64,8 +64,8 @@ describe('killRun on a worker that ignores SIGTERM', () => {
   test('a fake worker that spawns children and ignores SIGTERM is sent a polite stop, then escalated with SIGKILL, and the tree is gone within the injectable grace', async () => {
     const state = runStateFixture();
     const worker = await startWorkerInRun(state, 'ignore-sigterm-children', 2);
-    const processTable = createMacosProcessTable();
-    const { spawner, calls } = recordingSpawner(createMacosSpawner({ processTable, deps: state.fx.deps }));
+    const processTable = createPosixProcessTable();
+    const { spawner, calls } = recordingSpawner(createPosixSpawner({ processTable, deps: state.fx.deps }));
     const before = state.fx.deps.now();
 
     await withClock(killRun({ ...state.context, runId: 'run-1', spawner, processTable, graceMs: GRACE_MS }), state.fx.deps);

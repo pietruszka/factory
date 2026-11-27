@@ -3,8 +3,8 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { createResumeCommand } from '../../src/cli/resume.js';
-import { createMacosProcessTable } from '../../src/ports/process-table.js';
-import { createMacosSpawner } from '../../src/ports/spawner.js';
+import { createPosixProcessTable } from '../../src/ports/process-table.js';
+import { createPosixSpawner } from '../../src/ports/spawner.js';
 import type { ResumeRunOptions } from '../../src/resume/resume-run.js';
 import { transition } from '../../src/run-state/transition.js';
 import { createWorktree } from '../../src/worktree/create.js';
@@ -87,11 +87,11 @@ export function resumeOptions(
   worker: InstrumentedRuntime,
   overrides: Partial<ResumeRunOptions> = {},
 ): ResumeRunOptions {
-  const processTable = createMacosProcessTable();
+  const processTable = createPosixProcessTable();
   return {
     ...state.context,
     runtime: worker.runtime,
-    spawner: createMacosSpawner({ processTable, deps: state.fx.deps }),
+    spawner: createPosixSpawner({ processTable, deps: state.fx.deps }),
     processTable,
     repo: 'example-frontend',
     ticket: 'FE-123',

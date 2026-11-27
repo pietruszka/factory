@@ -2,8 +2,8 @@
 // with a scripted fake worker, under the HOME and FACTORY_HOME the test gives it. It starts no model CLI.
 // Started by test/resume/crash.test.ts through `node --import tsx`. Prints the outcome as one JSON line.
 import { openEventLog, openEventLogReadOnly } from '../../src/event-log/open.js';
-import { createMacosProcessTable } from '../../src/ports/process-table.js';
-import { createMacosSpawner } from '../../src/ports/spawner.js';
+import { createPosixProcessTable } from '../../src/ports/process-table.js';
+import { createPosixSpawner } from '../../src/ports/spawner.js';
 import { resumeRun } from '../../src/resume/resume-run.js';
 import { createFakeDeps } from './fake-deps.js';
 import { createFakeWorkerRuntime, loadScenario } from './fake-worker.js';
@@ -17,8 +17,8 @@ const deps = {
   sleep: (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
 };
 const env = process.env;
-const processTable = createMacosProcessTable();
-const spawner = createMacosSpawner({ processTable, deps });
+const processTable = createPosixProcessTable();
+const spawner = createPosixSpawner({ processTable, deps });
 const log = openEventLog({ env, deps });
 const reader = openEventLogReadOnly({ env });
 const runtime = createFakeWorkerRuntime({ scenario: loadScenario(scenarioPath), spawner, processTable, deps, eventLog: log });

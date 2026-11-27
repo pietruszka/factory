@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { openEventLogReadOnly } from '../event-log/open.js';
 import { createSystemDeps, type Deps } from '../platform/deps.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
-import { createMacosProcessTable, type ProcessTable } from '../ports/process-table.js';
+import { createPosixProcessTable, type ProcessTable } from '../ports/process-table.js';
 import { diskReport, measureDiskUse, renderDisk, type MeasureDisk } from '../retention/disk-usage.js';
 import { isSlug } from '../run-folder/path.js';
 import { listRuns, type StatusRow } from '../status/list-runs.js';
@@ -93,7 +93,7 @@ async function readRows(options: Partial<StatusCommandOptions>, ticket: string |
     return await listRuns({
       reader,
       deps: options.deps ?? createSystemDeps(),
-      processTable: options.processTable ?? createMacosProcessTable(),
+      processTable: options.processTable ?? createPosixProcessTable(),
       ...(ticket === undefined ? {} : { ticket }),
     });
   } finally {

@@ -34,7 +34,7 @@ export function createFakeProcessTable(): FakeProcessTable {
 }
 
 /** Process table that asks `ps` which command a pid runs now. */
-export function createMacosProcessTable(options: { run?: RunCommand } = {}): ProcessTable {
+export function createPosixProcessTable(options: { run?: RunCommand } = {}): ProcessTable {
   const run = options.run ?? runCommand;
   const records = new Map<number, ProcessRecord>();
   return {

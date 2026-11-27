@@ -137,13 +137,16 @@ describe('exit codes', () => {
       expect(out).toEqual({ stdout: '', stderr: '' });
     });
 
-    test('on the happy path runMain runs the command with the loaded version', async () => {
-      const { options, out } = entryOptions(['version']);
+    test.each(['darwin', 'linux'] as const)(
+      'on the happy path runMain runs the command with the loaded version on %s',
+      async (os) => {
+        const { options, out } = entryOptions(['version'], { os });
 
-      const exitCode = await runMain(options);
+        const exitCode = await runMain(options);
 
-      expect(exitCode).toBe(0);
-      expect(out.stdout).toContain('factory 1.2.3');
-    });
+        expect(exitCode).toBe(0);
+        expect(out.stdout).toContain('factory 1.2.3');
+      },
+    );
   });
 });

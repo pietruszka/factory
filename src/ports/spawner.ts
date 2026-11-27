@@ -109,10 +109,10 @@ const signalIgnoringGone = (pid: number, signal: 'SIGTERM' | 'SIGKILL'): void =>
 };
 
 /**
- * macOS Spawner. Each child leads its own process group. `killTree` sends SIGKILL and `termTree`
+ * POSIX Spawner. Each child leads its own process group. `killTree` sends SIGKILL and `termTree`
  * SIGTERM to the descendants first, then the parent, and only when the pid still runs the recorded command.
  */
-export function createMacosSpawner(options: {
+export function createPosixSpawner(options: {
   processTable: ProcessTable;
   deps: Deps;
   run?: RunCommand;

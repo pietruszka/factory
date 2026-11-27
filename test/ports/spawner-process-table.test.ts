@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from 'vitest';
 
 import { createFakeDeps } from '../support/fake-deps.js';
-import { createFakeProcessTable, createMacosProcessTable } from '../../src/ports/process-table.js';
+import { createFakeProcessTable, createPosixProcessTable } from '../../src/ports/process-table.js';
 import { createMacosPlatform } from '../../src/ports/platform.js';
-import { createMacosSpawner } from '../../src/ports/spawner.js';
+import { createPosixSpawner } from '../../src/ports/spawner.js';
 import { cleanupTempHomes, makeTempHome } from '../support/temp-home.js';
 
 afterEach(cleanupTempHomes);
@@ -23,8 +23,8 @@ describe('a fake ProcessTable', () => {
 
 describe('the macOS Spawner and ProcessTable', () => {
   test('exist and are testable without starting a real worker CLI', async () => {
-    const processTable = createMacosProcessTable();
-    const spawner = createMacosSpawner({ processTable, deps: createFakeDeps({ start: 5000 }) });
+    const processTable = createPosixProcessTable();
+    const spawner = createPosixSpawner({ processTable, deps: createFakeDeps({ start: 5000 }) });
 
     const child = await spawner.spawn({ command: '/usr/bin/true', args: [], cwd: makeTempHome() });
     const result = await child.exit;
@@ -39,8 +39,8 @@ describe('the macOS Spawner and ProcessTable', () => {
 
 describe('the macOS Spawner environment and output', () => {
   test('forwards the request env to the child and captures its stdout and stderr', async () => {
-    const processTable = createMacosProcessTable();
-    const spawner = createMacosSpawner({ processTable, deps: createFakeDeps() });
+    const processTable = createPosixProcessTable();
+    const spawner = createPosixSpawner({ processTable, deps: createFakeDeps() });
     const cwd = makeTempHome();
 
     const child = await spawner.spawn({
@@ -58,8 +58,8 @@ describe('the macOS Spawner environment and output', () => {
 
 describe('the macOS Spawner killTree', () => {
   const setup = () => {
-    const processTable = createMacosProcessTable();
-    const spawner = createMacosSpawner({ processTable, deps: createFakeDeps() });
+    const processTable = createPosixProcessTable();
+    const spawner = createPosixSpawner({ processTable, deps: createFakeDeps() });
     return { processTable, spawner };
   };
 

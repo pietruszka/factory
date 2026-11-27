@@ -326,13 +326,9 @@ export function parseOpenCodeModelsOutput(output: string): string[] {
     .filter((line) => /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._\-[\]=,]+)+$/.test(line));
 }
 
-function commandForCli(cli: string): string {
-  if (cli === 'cursor-agent') {
-    return 'set -o pipefail; agent models | cat';
-  }
-  if (cli === 'opencode') {
-    return 'set -o pipefail; opencode models | cat';
-  }
+function binaryForCli(cli: string): string {
+  if (cli === 'cursor-agent') return 'agent';
+  if (cli === 'opencode') return 'opencode';
   throw new Error(`Unsupported CLI for model list lookup: ${cli}`);
 }
 
@@ -356,10 +352,10 @@ export function loadOpenCodeModelIds(
 ): string[] {
   const attempts = Math.max(1, options.attempts ?? 10);
   const delayMs = options.delayMs ?? 2_000;
-  const command = commandForCli('opencode');
+  const command = 'opencode';
   let last: string[] = [];
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const result = spawnSync('sh', ['-c', command], {
+    const result = spawnSync(command, ['models'], {
       cwd: realpathSync(tmpdir()),
       env,
       encoding: 'utf8',
@@ -367,11 +363,13 @@ export function loadOpenCodeModelIds(
       maxBuffer: TEN_MB,
     });
     if (result.error) {
-      throw new Error(`Failed to run ${command}: ${result.error.message}`);
+      throw new Error(`Failed to run ${command} models: ${result.error.message}`);
     }
     const stderr = (result.stderr ?? '').trim();
     if (result.status !== 0) {
-      throw new Error(`Command failed: ${command} (exit ${result.status})${stderr ? `; stderr: ${stderr}` : ''}`);
+      throw new Error(
+        `Command failed: ${command} models (exit ${result.status})${stderr ? `; stderr: ${stderr}` : ''}`,
+      );
     }
     last = parseOpenCodeModelsOutput(result.stdout ?? '');
     if (wanted.every((id) => last.includes(id))) {
@@ -399,20 +397,20 @@ function loadModelCatalogFromCli(
       catalog[cli] = ids;
       continue;
     }
-    const command = commandForCli(cli);
-    const result = spawnSync('sh', ['-c', command], {
+    const command = binaryForCli(cli);
+    const result = spawnSync(command, ['models'], {
       env,
       encoding: 'utf8',
       timeout: 30_000,
       maxBuffer: TEN_MB,
     });
     if (result.error) {
-      throw new Error(`Failed to run ${command}: ${result.error.message}`);
+      throw new Error(`Failed to run ${command} models: ${result.error.message}`);
     }
     const stderr = (result.stderr ?? '').trim();
     const stderrSuffix = stderr ? `; stderr: ${stderr}` : '';
     if (result.status !== 0) {
-      throw new Error(`Command failed: ${command} (exit ${result.status})${stderrSuffix}`);
+      throw new Error(`Command failed: ${command} models (exit ${result.status})${stderrSuffix}`);
     }
     let parsed: string[];
     try {
@@ -422,7 +420,7 @@ function loadModelCatalogFromCli(
       throw new Error(`${message}${stderrSuffix}`);
     }
     if (parsed.length === 0) {
-      throw new Error(`No model ids parsed from ${command} output.`);
+      throw new Error(`No model ids parsed from ${command} models output.`);
     }
     catalog[cli] = parsed;
   }
