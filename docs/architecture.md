@@ -16,7 +16,11 @@ The repository holds the TypeScript `factory` CLI (M1 foundation), its tests, ag
 ```text
 .
 ├── .agents/skills/               # project agent skills (factory-change, factory-test, factory-docs)
-├── .github/workflows/docs.yml    # build, and deploy to GitHub Pages
+├── .github/
+│   ├── pull_request_template.md  # AC table, shared-helpers checkbox, gates
+│   └── workflows/
+│       ├── docs.yml              # build, and deploy to GitHub Pages
+│       └── pr-title.yml          # PR titles must match type(FAC-N): summary
 ├── AGENTS.md                     # always-on instructions for coding agents on this repo
 ├── README.md                     # GitHub landing page; points here
 ├── package.json                  # CLI build, gates, docs scripts, sandbox helpers
@@ -60,7 +64,7 @@ These are absent. Do not document them as if they existed. [End-to-end flow](/fl
 - A license file (`LICENSE` / `COPYING`)
 - A stated copyright holder
 - Issue templates
-- CI other than `.github/workflows/docs.yml`
+- Quality-gate CI (typecheck, lint, test on every PR) — only Pages deploy and the PR-title check exist
 - A GitHub repository description, homepage, or topics
 - A published package on npm
 - Flow A/E/F/H run commands (`factory plan`, `factory run`, `factory approve`, …) — not in M1
