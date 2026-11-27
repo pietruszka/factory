@@ -37,7 +37,7 @@ Instructions for coding agents working **on this repository**. This is not the p
 
 ## Definition of done
 
-1. `npm run typecheck && npm run lint && npm test`
+1. `npm run check`
 2. If CLI surface or behaviour changed, update the matching page under `docs/reference/` and keep overview “current state” honest ([docs/index.md](docs/index.md), [docs/architecture.md](docs/architecture.md)).
 
 ## Skills

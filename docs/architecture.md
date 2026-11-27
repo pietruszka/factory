@@ -64,7 +64,7 @@ These are absent. Do not document them as if they existed. [End-to-end flow](/fl
 - A license file (`LICENSE` / `COPYING`)
 - A stated copyright holder
 - Issue templates
-- Quality-gate CI (typecheck, lint, test on every PR) — only Pages deploy and the PR-title check exist
+- Ubuntu quality-gate CI — the macOS gate in `.github/workflows/ci.yml` runs on every PR and every push to `main`; Ubuntu waits until the factory runs on Linux
 - A GitHub repository description, homepage, or topics
 - A published package on npm
 - Flow A/E/F/H run commands (`factory plan`, `factory run`, `factory approve`, …) — not in M1

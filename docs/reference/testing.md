@@ -5,7 +5,7 @@ description: How tests stay isolated (temp homes, network guard, no real CLI) an
 
 # Testing
 
-Tests run with Vitest 5.1.2. Every test file sits under `test/` and ends in `.test.ts`. Test titles are plain behaviour names, grouped with `describe` blocks. `npm test` runs all of them with at most two workers (`maxWorkers: 2` in `vitest.config.ts`).
+Tests run with Vitest 5.1.2. Every test file sits under `test/` and ends in `.test.ts`. Test titles are plain behaviour names, grouped with `describe` blocks. `npm test` uses the `forks` pool with at most two workers (`pool: 'forks'` and `maxWorkers: 2` in `vitest.config.ts`). Vitest 5 has no min-forks option; `maxWorkers` is the cap. A unit test asserts those values through the resolved Vitest config.
 
 ## Temp homes
 
