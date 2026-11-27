@@ -50,7 +50,7 @@ Runs ESLint with `eslint.config.js` over `src/`. It uses the `recommended` rules
 
 ## `test`
 
-Runs every test once with Vitest. Temp homes, the network guard and the L3 folder are described in [Testing](/reference/testing).
+Runs every test once with Vitest 5.1.2, capped at two workers. Temp homes, the network guard and the L3 folder are described in [Testing](/reference/testing).
 
 ## `test:l3`
 
@@ -93,4 +93,4 @@ The `package.json` script itself does not pin a port. CI does not run preview.
 | `npm ci` | CI, and a clean local install from the lockfile |
 | `npm install` | After you change `package.json` dependencies |
 
-Direct dev dependencies include `vitepress` at `1.6.4`, `mermaid` at `11.17.2`, `vitepress-plugin-mermaid` at `2.0.17`, `vitest`, `tsx`, `typescript`, `eslint` at `9.39.5` and `typescript-eslint`. `engines.node` asks for Node.js `>=22.13`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.
+Direct dev dependencies include `vitepress` at `1.6.4`, `mermaid` at `11.17.2`, `vitepress-plugin-mermaid` at `2.0.17`, `vitest` at `5.1.2`, `vite` at `6.4.6` (Vitest’s peer; VitePress keeps its own Vite 5), `tsx`, `typescript`, `eslint` at `9.39.5` and `typescript-eslint`. `engines.node` asks for Node.js `>=22.13`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.

@@ -5,7 +5,7 @@ description: How tests stay isolated (temp homes, network guard, no real CLI) an
 
 # Testing
 
-Tests run with Vitest. Every test file sits under `test/` and ends in `.test.ts`. Test titles are plain behaviour names, grouped with `describe` blocks. `npm test` runs all of them.
+Tests run with Vitest 5.1.2. Every test file sits under `test/` and ends in `.test.ts`. Test titles are plain behaviour names, grouped with `describe` blocks. `npm test` runs all of them with at most two workers (`maxWorkers: 2` in `vitest.config.ts`).
 
 ## Temp homes
 
