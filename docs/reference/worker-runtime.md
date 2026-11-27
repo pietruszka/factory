@@ -54,7 +54,7 @@ The bracketed parts appear only for a read-only role or a resume session id.
 
 ### cwd and PWD
 
-`cwd` of the child and `env.PWD` are both `request.cwd`, the run's worktree under the cache worktrees root (see [Worktrees](/reference/worktrees)). The OpenCode `cursor-acp/` bridge resolves relative tool paths against `PWD`, so `cwd` alone is not enough. `request.env` is added to the parent's environment for the child. The macOS spawner forwards `SpawnRequest.env` and captures stdout and stderr (`SpawnedProcess.output`) so the parsers can run.
+`cwd` of the child and `env.PWD` are both `request.cwd`, the run's worktree under the cache worktrees root (see [Worktrees](/reference/worktrees)). The OpenCode `cursor-acp/` bridge resolves relative tool paths against `PWD`, so `cwd` alone is not enough. `request.env` is added to the parent's environment for the child. The POSIX spawner forwards `SpawnRequest.env` and captures stdout and stderr (`SpawnedProcess.output`) so the parsers can run.
 
 Adapters get the worktree path. They do not create worktrees or choose between `linked` and `standalone`. Which mode OpenCode needs is still open (D-39).
 

@@ -4,8 +4,8 @@ import { stringify } from 'yaml';
 import { expect } from 'vitest';
 
 import { openEventLog, openEventLogReadOnly, type EventLog, type EventLogReadOnly } from '../../src/event-log/open.js';
-import { createMacosProcessTable } from '../../src/ports/process-table.js';
-import { createMacosSpawner } from '../../src/ports/spawner.js';
+import { createPosixProcessTable } from '../../src/ports/process-table.js';
+import { createPosixSpawner } from '../../src/ports/spawner.js';
 import type { RunStateContext, RunStatus } from '../../src/run-state/context.js';
 import { runStubBuild, runStubPlan } from '../../src/run-state/stub-pipeline.js';
 import { createWorktree } from '../../src/worktree/create.js';
@@ -156,8 +156,8 @@ export async function devRunFixture(options: DevRunOptions = {}): Promise<DevRun
   const worktree = join(cacheRoot, 'worktrees', repoName, 'FE-123');
   const runFolder = join(factoryHome, 'runs', repoName, 'FE-123');
 
-  const processTable = createMacosProcessTable();
-  const spawner = createMacosSpawner({ processTable, deps });
+  const processTable = createPosixProcessTable();
+  const spawner = createPosixSpawner({ processTable, deps });
   const runtime = (scenario: string): WorkerRuntime =>
     instrument(
       createFakeWorkerRuntime({

@@ -29,6 +29,13 @@ afterEach(() => {
 const rowsOf = (run: CliRun): StatusRow[] => (parseEnvelope(run).data as { rows: StatusRow[] }).rows;
 
 describe('factory status: active and recent runs', () => {
+  test('exits 0 on linux', async () => {
+    const fx = statusFixture();
+    seedThreeRuns(fx);
+    const run = await statusCli(fx, [], { os: 'linux' });
+    expect(run.exitCode, run.stderr).toBe(0);
+  });
+
   test('given two finished runs and one running run, factory status lists all three with ticket, repo, flow, status, current step, cost marked reported or estimated, and time since the last event, with the active run first', async () => {
     const fx = statusFixture();
     seedThreeRuns(fx);

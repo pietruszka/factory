@@ -61,7 +61,7 @@ describe('runModelsPreflight', () => {
 });
 
 describe('runPreflight', () => {
-  test('uses pipefail command and includes stderr when agent models command fails', async () => {
+  test('includes stderr when agent models command fails', async () => {
     const factoryHome = mkdtempSync(join(tmpdir(), 'factory-preflight-'));
     writeFileSync(join(factoryHome, 'config.yaml'), `${renderModelsSectionYaml(DEFAULT_MODELS)}\n`, 'utf8');
     writeFileSync(join(factoryHome, DEV_HOME_MARKER), 'test marker\n', 'utf8');
@@ -70,11 +70,11 @@ describe('runPreflight', () => {
       FACTORY_HOME: factoryHome,
       PATH: '/bin',
     });
-    await expect(run).rejects.toThrow(/set -o pipefail; agent models \| cat/);
-    await expect(run).rejects.toThrow(/not found|command not found/);
+    await expect(run).rejects.toThrow(/agent models/);
+    await expect(run).rejects.toThrow(/not found|command not found|ENOENT/i);
   });
 
-  test('looks up opencode models with a pipefail command when a role uses opencode', async () => {
+  test('looks up opencode models with a direct spawn when a role uses opencode', async () => {
     const factoryHome = mkdtempSync(join(tmpdir(), 'factory-preflight-'));
     const models = {
       ...DEFAULT_MODELS,
@@ -103,8 +103,8 @@ describe('runPreflight', () => {
       FACTORY_HOME: factoryHome,
       PATH: `${fakeBin}:/bin`,
     });
-    await expect(run).rejects.toThrow(/set -o pipefail; opencode models \| cat/);
-    await expect(run).rejects.toThrow(/not found|command not found/);
+    await expect(run).rejects.toThrow(/opencode models/);
+    await expect(run).rejects.toThrow(/not found|command not found|ENOENT/i);
   });
 });
 
