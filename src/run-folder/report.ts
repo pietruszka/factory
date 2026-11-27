@@ -4,6 +4,7 @@ import { isAbsolute, join } from 'node:path';
 import { MODEL_ROLES } from '../config/models.js';
 import { formatUsd } from '../cost/format.js';
 import type { EventLogReadOnly } from '../event-log/open.js';
+import { readPayload } from '../event-log/payloads.js';
 import { FactoryError } from '../platform/errors.js';
 import { isWithinOrSamePath, resolveComparablePath } from '../platform/path-helpers.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
@@ -153,8 +154,8 @@ function nextActionLines(log: EventLogReadOnly, runId: string): string[] {
      WHERE e.run_id = ? AND e.type = 'run_stop' AND e.status = r.status ORDER BY e.id DESC LIMIT 1`,
     runId,
   )[0];
-  const next = typeof row?.payload_json === 'string' ? (JSON.parse(row.payload_json) as { next?: unknown }).next : undefined;
-  return typeof next === 'string' ? ['## Next action', '', next, ''] : [];
+  const next = typeof row?.payload_json === 'string' ? readPayload(row, 'run_stop').next : undefined;
+  return next === undefined ? [] : ['## Next action', '', next, ''];
 }
 
 function formatDuration(startedAt: string | undefined, endedAt: string | undefined): string {

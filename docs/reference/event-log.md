@@ -65,6 +65,8 @@ Allowed `runs.status` values: the phases `preflight`, `routing`, `planning`, `bu
 
 Every input is validated with a Zod schema before anything is written. Unknown fields are refused rather than dropped.
 
+Known product event types (`worktree_created`, `worktree_removed`, `worktree_install`, `run_status`, `loop`, `run_stop`, `draft_pr`, `retention_cleaned`, `resumed`, `killed`, `preflight`, `write_scope`, `usage`) also validate `payload` against a per-type schema in `src/event-log/payloads.ts`. A mismatch is refused as `event_invalid` and nothing is written. Other types still store any JSON-serialisable `payload`. Readers use `readPayload(row, type)` so a present but malformed payload becomes `event_payload_invalid` instead of a raw `SyntaxError` or `TypeError`. A missing `payload_json` is still treated as “no value” by the callers that check for a string first.
+
 ## Preflight event
 
 The `preflight` library appends one event of type `preflight` to a run in `preflight`, with `status` `ok` or `failed` and a `payload` that lists the checks. It sets no `cost_usd`. See [Preflight](/reference/preflight#the-preflight-event).
@@ -105,7 +107,8 @@ Each is a `FactoryError` with `where` and `next`.
 
 | Code | Exit | When |
 | --- | --- | --- |
-| `event_invalid` | 2 | An event is missing a required field, has a bad value or an unknown field, or names a run that does not exist. `where` is `events.<field>`. |
+| `event_invalid` | 2 | An event is missing a required field, has a bad value or an unknown field, or names a run that does not exist. `where` is `events.<field>`. Also when a known event type's `payload` does not match its schema. |
+| `event_payload_invalid` | 2 | A stored `payload_json` for a known type is not valid JSON or does not match that type's schema. `where` is `events.<type>.payload`. |
 | `row_invalid` | 2 | The same for every other table. `where` is `<table>.<field>`. |
 | `run_already_active` | 2 | The one-active-run index refused a write. Names the repo, ticket and the existing `run_id`; `next` points to `factory status` and `factory resume <ticket>`. |
 | `db_not_found` | 2 | A read-only open and no file. `factory status` checks for the file first and shows an empty list instead. |

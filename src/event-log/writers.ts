@@ -1,9 +1,10 @@
 import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 import type { Deps } from '../platform/deps.js';
 import { FactoryError } from '../platform/errors.js';
 import { redactValue } from '../redaction/redact.js';
+import { EVENT_PAYLOAD_SCHEMAS, isKnownEventType } from './payloads.js';
 import {
   approvalSchema,
   checkRowSchema,
@@ -273,12 +274,20 @@ export function createWriters({ db, deps, secrets }: WriterContext): EventLogWri
     },
 
     appendEvent(input) {
-      const { payload, ...columns } = parseRow(
+      const { payload: inputPayload, ...columns } = parseRow(
         eventSchema,
         withDefaults(input, { started_at: now }),
         'events',
         'event_invalid',
       );
+      const payload = isKnownEventType(columns.type)
+        ? parseRow(
+            z.strictObject({ payload: EVENT_PAYLOAD_SCHEMAS[columns.type] }),
+            { payload: inputPayload },
+            'events',
+            'event_invalid',
+          ).payload
+        : inputPayload;
       const row = redactRow(columns);
       const payloadJson =
         payload === undefined ? null : redactedJson(payload, 'event_invalid', 'events', 'payload');

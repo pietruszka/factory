@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 
 import type { EventLogReadOnly } from '../event-log/open.js';
+import { readPayload, type EventPayload } from '../event-log/payloads.js';
 import { FactoryError } from '../platform/errors.js';
 import { resolveComparablePath } from '../platform/path-helpers.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
@@ -28,29 +29,23 @@ const none = (): Outcome => ({ worktrees_removed: [], worktrees_skipped: [] });
 /** True when `time` (ISO-8601) is strictly more than `limitMs` before `now`. Unparseable text is never old. */
 export const isOlderThan = (time: string, now: number, limitMs: number): boolean => now - Date.parse(time) > limitMs;
 
-const payloadOf = (value: unknown): Record<string, unknown> => {
-  try {
-    const parsed: unknown = typeof value === 'string' ? JSON.parse(value) : undefined;
-    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-};
-
 /** True when `recorded` (from an event payload) names the same folder as `path`, links followed. */
-const samePath = (recorded: unknown, path: string): boolean =>
-  typeof recorded === 'string' && resolveComparablePath(recorded) === resolveComparablePath(path);
+const samePath = (recorded: string, path: string): boolean =>
+  resolveComparablePath(recorded) === resolveComparablePath(path);
 
 /** The path of the run's worktree, when it has one that was not removed since. */
 function recordedWorktree(reader: EventLogReadOnly, runId: string): string | undefined {
-  const latest = (type: string): { id: number; payload: Record<string, unknown> } | undefined => {
+  const latest = <T extends 'worktree_created' | 'worktree_removed'>(
+    type: T,
+  ): { id: number; payload: EventPayload<T> } | undefined => {
     const row = reader.query('SELECT id, payload_json FROM events WHERE run_id = ? AND type = ? ORDER BY id DESC LIMIT 1', runId, type)[0];
-    return row === undefined ? undefined : { id: Number(row.id), payload: payloadOf(row.payload_json) };
+    if (row === undefined || typeof row.payload_json !== 'string') return undefined;
+    return { id: Number(row.id), payload: readPayload(row, type) };
   };
   const created = latest('worktree_created');
   const removed = latest('worktree_removed');
-  const path = created?.payload.path;
-  if (created === undefined || typeof path !== 'string') return undefined;
+  if (created === undefined) return undefined;
+  const path = created.payload.path;
   return removed !== undefined && removed.id > created.id && samePath(removed.payload.path, path) ? undefined : path;
 }
 
@@ -63,8 +58,8 @@ function abandonedAt(reader: EventLogReadOnly, runId: string): string | undefine
 /** The number of the run's latest `draft_pr` event, when it has a valid one. */
 function pullRequestNumber(reader: EventLogReadOnly, runId: string): number | undefined {
   const row = reader.query("SELECT payload_json FROM events WHERE run_id = ? AND type = 'draft_pr' ORDER BY id DESC LIMIT 1", runId)[0];
-  const number = payloadOf(row?.payload_json).number;
-  return typeof number === 'number' && Number.isInteger(number) && number > 0 ? number : undefined;
+  if (typeof row?.payload_json !== 'string') return undefined;
+  return readPayload(row, 'draft_pr').number;
 }
 
 type Verdict = { due: true } | { due: false; skip?: { reason: string; next: string } };
