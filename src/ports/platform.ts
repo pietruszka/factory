@@ -32,16 +32,17 @@ export function createFakePlatform(
     keychainReads,
     clipboardWrites,
     keychain: {
-      get: async (item) => {
+      get: (item) => {
         keychainReads.push(item);
-        return options.keychain?.[item];
+        return Promise.resolve(options.keychain?.[item]);
       },
     },
     clipboard: {
-      read: async () => clipboard,
-      write: async (text) => {
+      read: () => Promise.resolve(clipboard),
+      write: (text) => {
         clipboardWrites.push(text);
         clipboard = text;
+        return Promise.resolve();
       },
     },
   };

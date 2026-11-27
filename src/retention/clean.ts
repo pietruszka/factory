@@ -51,7 +51,12 @@ export async function applyRetention(options: ApplyRetentionOptions): Promise<Re
       run_id: String(row.run_id),
       repo: String(row.repo),
       ticket: String(row.ticket),
-      ended_at: row.ended_at === null ? null : String(row.ended_at),
+      ended_at:
+        typeof row.ended_at === 'string'
+          ? row.ended_at
+          : typeof row.ended_at === 'number'
+            ? String(row.ended_at)
+            : null,
     }));
 
   const result: RetentionResult = { worktrees_removed: [], worktrees_skipped: [], artifacts_deleted: [] };

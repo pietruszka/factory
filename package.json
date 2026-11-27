@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "build:watch": "npm run build -- --watch",
-    "lint": "eslint src",
+    "lint": "eslint src test scripts",
     "test": "vitest run",
     "test:l3": "tsx scripts/run-layer.ts",
     "test:sample-gates": "tsx scripts/sample-gates.ts",

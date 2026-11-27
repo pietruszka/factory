@@ -107,4 +107,4 @@ Path errors are `FactoryError` values (`src/platform/errors.ts`) with `code`, `m
 
 ### Clock and randomness
 
-`src/platform/deps.ts` defines `Deps` (`now`, `sleep`, `setTimer`, `clearTimer`, `newId`, `random`) and `createSystemDeps()`. Outside `src/platform/deps.ts`, `npm run lint` bans `Date.now`, `new Date` in any form, `setTimeout`, `setInterval`, `Math.random` and `crypto.randomUUID`, with the message "use Deps (P-14)". Files under `test/` are exempt. `test/support/fake-deps.ts` gives a fake clock with `advance(ms)`, sequential ids (`r_0001`, `r_0002`) and a seeded `random()`.
+`src/platform/deps.ts` defines `Deps` (`now`, `sleep`, `setTimer`, `clearTimer`, `newId`, `random`) and `createSystemDeps()`. Outside `src/platform/deps.ts`, `npm run lint` bans `Date.now`, `new Date` in any form, `setTimeout`, `setInterval`, `Math.random` and `crypto.randomUUID` under `src/`, with the message "use Deps (P-14)". Files under `test/` and `scripts/` are exempt from that ban (they still get the non-type-aware `recommended` rules). `test/support/fake-deps.ts` gives a fake clock with `advance(ms)`, sequential ids (`r_0001`, `r_0002`) and a seeded `random()`.

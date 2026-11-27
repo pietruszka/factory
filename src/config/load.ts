@@ -93,7 +93,7 @@ function parseFile(file: string): ParsedFile {
   if (doc.value !== null && !isPlain(doc.value)) {
     throw invalid(file, 1, 'The config file must be a mapping of keys to values.', 'Start the file with `key: value` lines.');
   }
-  assertNoSecrets({ file, value: doc.value, lineOf: doc.lineOf });
+  assertNoSecrets({ file, value: doc.value, lineOf: (path) => doc.lineOf(path) });
   return { file, doc, value: doc.value ?? {} };
 }
 
@@ -246,7 +246,7 @@ export function loadConfig(options: LoadOptions): LoadedConfig {
 
   // `match` only selects the file. It is not a setting, so it stays out of the merged config and the hash.
   const repoSettings = Object.fromEntries(Object.entries(found.repo).filter(([key]) => key !== 'match'));
-  const merged = deepMerge(deepMerge(structuredClone(DEFAULTS), global.config as Plain), repoSettings);
+  const merged = deepMerge(deepMerge(structuredClone(DEFAULTS), global.config), repoSettings);
   const config = validate<Config>(MergedConfigSchema, found.parsed, merged);
 
   return {

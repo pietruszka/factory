@@ -18,19 +18,20 @@ export interface CleanCommandOptions {
 }
 
 /** There is no code host adapter yet, so a pull request cannot be read; any read fails and its worktree is kept. */
-const unavailable = (): never => {
-  throw new FactoryError({
-    code: 'code_host_unavailable',
-    message: 'No code host is connected, so a pull request cannot be read yet.',
-    where: 'CodeHost',
-    next: 'Wait for the code host adapter; until then only abandoned runs are cleaned.',
-    exitCode: EXIT_CODES.refused,
-  });
-};
+const unavailable = (): Promise<never> =>
+  Promise.reject(
+    new FactoryError({
+      code: 'code_host_unavailable',
+      message: 'No code host is connected, so a pull request cannot be read yet.',
+      where: 'CodeHost',
+      next: 'Wait for the code host adapter; until then only abandoned runs are cleaned.',
+      exitCode: EXIT_CODES.refused,
+    }),
+  );
 const noCodeHost: CodeHost = {
-  fetchPullRequest: async () => unavailable(),
-  push: async () => unavailable(),
-  openDraftPr: async () => unavailable(),
+  fetchPullRequest: () => unavailable(),
+  push: () => unavailable(),
+  openDraftPr: () => unavailable(),
 };
 
 const EMPTY: RetentionResult = { worktrees_removed: [], worktrees_skipped: [], artifacts_deleted: [] };
