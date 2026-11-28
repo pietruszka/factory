@@ -48,7 +48,7 @@ This site is the documentation for the Git repository [pietruszka/factory](https
 | Repository | Public GitHub repository `pietruszka/factory` |
 | Default branch | `main` |
 | Application source | `src/`: platform, ports and the M1 `factory` CLI. See [CLI](/reference/cli) |
-| Agent instructions | Root `AGENTS.md` and `.agents/skills/` |
+| Agent instructions | Root `AGENTS.md`, `CONTEXT.md`, `GLOSSARY.md` and `.agents/skills/` |
 | License file | None |
 | Package | `package.json` builds the CLI (`npm run build`, `bin.factory`), runs the gates and builds this docs site |
 | Public Pages URL | <https://pietruszka.github.io/factory/> |
@@ -61,5 +61,5 @@ That address is live. Pages is set to GitHub Actions, and the site is public. Se
 - Someone reading the intended factory flow. See [End-to-end flow](/flow). M1 foundation exists; full flows do not.
 - Someone cloning the repository, who needs the build, lint and test commands. See [npm scripts](/reference/scripts).
 - Someone editing the docs, who needs the scripts, the config, and the Pages workflow.
-- A coding agent or contributor changing application code: follow root `AGENTS.md` and keep [Architecture](/architecture) aligned with the tree.
+- A coding agent or contributor changing application code: follow root `AGENTS.md`, `CONTEXT.md` and `GLOSSARY.md`, and keep [Architecture](/architecture) aligned with the tree.
 

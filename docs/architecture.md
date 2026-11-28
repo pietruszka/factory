@@ -22,6 +22,8 @@ The repository holds the TypeScript `factory` CLI (M1 foundation), its tests, ag
 │       ├── docs.yml              # build, and deploy to GitHub Pages
 │       └── pr-title.yml          # PR titles must match type(FAC-N): summary
 ├── AGENTS.md                     # always-on instructions for coding agents on this repo
+├── CONTEXT.md                    # what reviewers check on a change
+├── GLOSSARY.md                   # domain words
 ├── README.md                     # GitHub landing page; points here
 ├── package.json                  # CLI build, gates, docs scripts, sandbox helpers
 ├── src/
@@ -55,7 +57,7 @@ Generated directories `docs/.vitepress/cache` and `docs/.vitepress/dist` appear 
 
 ## Agent instructions
 
-Coding agents that change this repository should follow root [AGENTS.md](https://github.com/pietruszka/factory/blob/main/AGENTS.md) and the skills under `.agents/skills/`. That `AGENTS.md` is for work **on** the repo; it is not the product-runtime file named in [End-to-end flow](/flow). Sandbox debugging of the factory itself uses the [Agent runbook](/agent-runbook).
+Coding agents that change this repository should follow root [AGENTS.md](https://github.com/pietruszka/factory/blob/main/AGENTS.md), [CONTEXT.md](https://github.com/pietruszka/factory/blob/main/CONTEXT.md), [GLOSSARY.md](https://github.com/pietruszka/factory/blob/main/GLOSSARY.md) and the skills under `.agents/skills/`. The cited decision numbers are indexed on [Decision index](/reference/decisions). The steps for a new command or port are on [Recipes](/reference/recipes). That `AGENTS.md` is for work **on** the repo; it is not the product-runtime file named in [End-to-end flow](/flow). Sandbox debugging of the factory itself uses the [Agent runbook](/agent-runbook).
 
 ## What is not here
 
