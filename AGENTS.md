@@ -20,6 +20,7 @@ Instructions for coding agents working **on this repository**. This is not the p
 | Tests | `test/` (L3 under `test/l3/`) |
 | Docs (VitePress, base `/factory/`) | `docs/` |
 | Project agent skills | `.agents/skills/` |
+| Reviewer context and domain words | [CONTEXT.md](CONTEXT.md), [GLOSSARY.md](GLOSSARY.md) |
 
 ## Safety (non-negotiable)
 
@@ -34,6 +35,13 @@ Instructions for coding agents working **on this repository**. This is not the p
 - Reach outside systems only through `src/ports/`. Tests use recording fakes; see [docs/reference/ports.md](docs/reference/ports.md).
 - Exit codes: `0` ok, `1` needs attention, `2` refused / bad usage, `3` breach, `4` internal (`src/cli/exit-codes.ts`).
 - Machine output: `--json` envelope with `exit_code` and `next_command` ([docs/reference/cli.md](docs/reference/cli.md)).
+
+## Working rules
+
+- `npm test` stays at two workers until T1 puts the cap in config ([docs/reference/testing.md](docs/reference/testing.md)).
+- A ticket is about 400–600 lines.
+- A new process call goes through a port ([docs/reference/ports.md](docs/reference/ports.md)).
+- `D-`, `P-`, `NFR-` and `ADR-` numbers are never renumbered or reused. The index records the ones this repo cites ([docs/reference/decisions.md](docs/reference/decisions.md)).
 
 ## Definition of done
 
@@ -93,3 +101,4 @@ Never cut: validation at trust boundaries, error handling that prevents data los
 - [docs/reference/ports.md](docs/reference/ports.md)
 - [docs/reference/cli.md](docs/reference/cli.md)
 - [docs/agent-runbook.md](docs/agent-runbook.md)
+- [docs/reference/recipes.md](docs/reference/recipes.md)
