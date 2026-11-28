@@ -4,10 +4,9 @@ import { join } from 'node:path';
 import { stringify } from 'yaml';
 
 import { resolveFactoryHome } from '../dev/home.js';
-import { FactoryError } from '../platform/errors.js';
+import { FactoryError, refused } from '../platform/errors.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
 import { SAMPLE_TAGS, unpackTodoSandbox } from '../sandbox/todo-sandbox.js';
-import { refuse } from './checkout.js';
 import type { CommandDef } from './router.js';
 
 const KNOWN_TAGS = SAMPLE_TAGS.join(', ');
@@ -32,24 +31,24 @@ const repoConfigYaml = (sandboxPath: string): string =>
 /** The throwaway home from FACTORY_HOME. Plain errors from the dev-home rules become refusals (exit 2). */
 export function throwawayHome(env: NodeJS.ProcessEnv, command = 'dev-init --sample'): string {
   if (!env.FACTORY_HOME) {
-    throw refuse(
-      'dev_home_required',
-      `FACTORY_HOME is not set. ${command} only works in a throwaway factory home.`,
-      'FACTORY_HOME',
-      'Run `npm run dev:init -- <throwaway-folder>`, then set FACTORY_HOME to that folder.',
-    );
+    throw refused({
+      code: 'dev_home_required',
+      message: `FACTORY_HOME is not set. ${command} only works in a throwaway factory home.`,
+      where: 'FACTORY_HOME',
+      next: 'Run `npm run dev:init -- <throwaway-folder>`, then set FACTORY_HOME to that folder.',
+    });
   }
   resolveFactoryPaths(env); // refuses a home or cache inside Documents, Desktop or Downloads (protected_folder)
   try {
     return resolveFactoryHome(env);
   } catch (error) {
     if (error instanceof FactoryError) throw error;
-    throw refuse(
-      'dev_home_invalid',
-      error instanceof Error ? error.message : String(error),
-      'FACTORY_HOME',
-      'Run `npm run dev:init -- <throwaway-folder>` and set FACTORY_HOME to that folder.',
-    );
+    throw refused({
+      code: 'dev_home_invalid',
+      message: error instanceof Error ? error.message : String(error),
+      where: 'FACTORY_HOME',
+      next: 'Run `npm run dev:init -- <throwaway-folder>` and set FACTORY_HOME to that folder.',
+    });
   }
 }
 
@@ -66,15 +65,20 @@ export const devInitCommand: CommandDef = {
     const env = process.env;
     const tag = typeof values.sample === 'string' ? values.sample : undefined;
     if (tag === undefined) {
-      throw refuse(
-        'sample_required',
-        'dev-init needs --sample <tag>.',
-        'dev-init',
-        `Run \`factory dev-init --sample todo-v0\`. Known samples: ${KNOWN_TAGS}. To make the throwaway home itself, run \`npm run dev:init -- <path>\`.`,
-      );
+      throw refused({
+        code: 'sample_required',
+        message: 'dev-init needs --sample <tag>.',
+        where: 'dev-init',
+        next: `Run \`factory dev-init --sample todo-v0\`. Known samples: ${KNOWN_TAGS}. To make the throwaway home itself, run \`npm run dev:init -- <path>\`.`,
+      });
     }
     if (!SAMPLE_TAGS.includes(tag)) {
-      throw refuse('sample_unknown', `Unknown sample "${tag}".`, `--sample ${tag}`, `Use one of: ${KNOWN_TAGS}.`);
+      throw refused({
+        code: 'sample_unknown',
+        message: `Unknown sample "${tag}".`,
+        where: `--sample ${tag}`,
+        next: `Use one of: ${KNOWN_TAGS}.`,
+      });
     }
 
     const home = throwawayHome(env);

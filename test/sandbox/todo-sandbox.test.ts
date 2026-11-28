@@ -155,6 +155,19 @@ describe('two unpacks are identical', () => {
     expect(sandboxState(path)).toEqual(before);
     expect(git(path, 'remote', '-v')).toBe('');
   });
+
+  test('a global core.hooksPath does not run during unpack', () => {
+    const home = makeTempHome();
+    const hooks = join(home, 'hooks');
+    const marker = join(home, 'hook-ran');
+    mkdirSync(hooks);
+    writeFileSync(join(hooks, 'post-checkout'), `#!/bin/sh\necho ran > "${marker}"\n`, 'utf8');
+    writeFileSync(join(home, '.gitconfig'), `[core]\n\thooksPath = ${hooks}\n`, 'utf8');
+
+    unpackTodoSandbox({ env: envFor(home), sample: 'todo-v0' });
+
+    expect(existsSync(marker)).toBe(false);
+  });
 });
 
 describe('a protected-folder or symlink path is refused', () => {

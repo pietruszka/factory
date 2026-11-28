@@ -3,23 +3,23 @@ import { existsSync } from 'node:fs';
 import { openEventLog, openEventLogReadOnly } from '../event-log/open.js';
 import { killRun } from '../kill/kill-run.js';
 import { createSystemDeps } from '../platform/deps.js';
-import type { FactoryError } from '../platform/errors.js';
+import { refused, type FactoryError } from '../platform/errors.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
 import { createPosixProcessTable } from '../ports/process-table.js';
 import { createPosixSpawner } from '../ports/spawner.js';
 import { runFolderPath, isSlug } from '../run-folder/path.js';
 import { findOpenRun } from '../run-state/find-run.js';
 import { worktreePath } from '../worktree/path.js';
-import { checkoutRoot, refuse, repoNameOf } from './checkout.js';
+import { checkoutRoot, repoNameOf } from './checkout.js';
 import type { CommandDef } from './router.js';
 
 const runNotFound = (repo: string, ticket: string): FactoryError =>
-  refuse(
-    'run_not_found',
-    `There is no running or stopped run for ${ticket} in ${repo}. Nothing was signalled.`,
-    ticket,
-    'Check the ticket and run the command from the checkout of the repo the run belongs to.',
-  );
+  refused({
+    code: 'run_not_found',
+    message: `There is no running or stopped run for ${ticket} in ${repo}. Nothing was signalled.`,
+    where: ticket,
+    next: 'Check the ticket and run the command from the checkout of the repo the run belongs to.',
+  });
 
 export const killCommand: CommandDef = {
   description: 'Stop the run of a ticket in this checkout and keep its worktree.',
@@ -27,12 +27,12 @@ export const killCommand: CommandDef = {
   run: async ({ positionals, cwd, packageVersion }) => {
     const ticket = positionals[0] ?? '';
     if (!isSlug(ticket)) {
-      throw refuse(
-        'ticket_invalid',
-        `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
-        'ticket',
-        'Pass the ticket key, for example `factory kill FE-123`.',
-      );
+      throw refused({
+        code: 'ticket_invalid',
+        message: `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
+        where: 'ticket',
+        next: 'Pass the ticket key, for example `factory kill FE-123`.',
+      });
     }
     const env = process.env;
     const checkout = checkoutRoot(env, cwd, 'kill');

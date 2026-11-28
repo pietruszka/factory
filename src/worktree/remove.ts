@@ -6,7 +6,7 @@ import type { Deps } from '../platform/deps.js';
 import { assertNotProtectedFolder } from '../platform/paths.js';
 import { isWithinOrSamePath, resolveComparablePath } from '../platform/path-helpers.js';
 import type { WorktreeMode } from './create.js';
-import { refuse } from './errors.js';
+import { refused } from '../platform/errors.js';
 import { runGit } from './git.js';
 
 export interface RemoveWorktreeOptions {
@@ -21,12 +21,12 @@ export interface RemoveWorktreeOptions {
 }
 
 function removeFailed(detail: string, path: string): Error {
-  return refuse(
-    'worktree_remove_failed',
-    `The worktree could not be removed: ${detail}`,
-    path,
-    'Check that the path is a worktree or clone made by the factory for this work repo, then try again.',
-  );
+  return refused({
+    code: 'worktree_remove_failed',
+    message: `The worktree could not be removed: ${detail}`,
+    where: path,
+    next: 'Check that the path is a worktree or clone made by the factory for this work repo, then try again.',
+  });
 }
 
 /** A linked worktree has a `.git` file that points at the work repo; a standalone clone has a `.git` folder. */
@@ -36,7 +36,7 @@ function modeOnDisk(path: string): WorktreeMode {
 
 /** Standalone only: deletes the clone, after checking it is a clone of this work repo and not the repo itself. */
 function removeClone(env: NodeJS.ProcessEnv, repoPath: string, path: string): void {
-  const origin = runGit(env, path, ['config', '--get', 'remote.origin.url']);
+  const origin = runGit(env, path, ['config', '--get', 'remote.origin.url'], { profile: 'user' });
   const isCloneOfRepo = origin.ok && resolveComparablePath(origin.stdout) === resolveComparablePath(repoPath);
   const comparable = resolveComparablePath(path);
   if (!isCloneOfRepo || isWithinOrSamePath(comparable, resolveComparablePath(repoPath))) {
@@ -54,18 +54,18 @@ export function removeWorktree(options: RemoveWorktreeOptions): void {
   const { env, repoPath, path } = options;
 
   if (!isAbsolute(path) || !existsSync(join(path, '.git'))) {
-    throw refuse(
-      'worktree_invalid',
-      `${path} is not an existing worktree.`,
-      path,
-      'Pass the absolute path returned by createWorktree.',
-    );
+    throw refused({
+      code: 'worktree_invalid',
+      message: `${path} is not an existing worktree.`,
+      where: path,
+      next: 'Pass the absolute path returned by createWorktree.',
+    });
   }
   assertNotProtectedFolder(path, env);
 
   const mode = modeOnDisk(path);
   if (mode === 'linked') {
-    const result = runGit(env, repoPath, ['worktree', 'remove', '--force', path]);
+    const result = runGit(env, repoPath, ['worktree', 'remove', '--force', path], { profile: 'user' });
     if (!result.ok) {
       throw removeFailed(result.stderr, path);
     }

@@ -13,6 +13,9 @@ export interface FactoryErrorInit {
   exitCode: number;
 }
 
+/** Fields shared by the refused and internal factories. */
+export type FactoryErrorFields = Omit<FactoryErrorInit, 'exitCode' | 'nextCommand'>;
+
 /** Error with a stable code, where it happened, a next action and an exit code. */
 export class FactoryError extends Error {
   readonly code: string;
@@ -30,4 +33,14 @@ export class FactoryError extends Error {
     this.nextCommand = init.nextCommand;
     this.exitCode = init.exitCode;
   }
+}
+
+/** Wrong use or an environment that cannot host the work: exit code 2. */
+export function refused(fields: FactoryErrorFields): FactoryError {
+  return new FactoryError({ ...fields, exitCode: 2 });
+}
+
+/** A bug in the factory: exit code 4. */
+export function internal(fields: FactoryErrorFields): FactoryError {
+  return new FactoryError({ ...fields, exitCode: 4 });
 }

@@ -3,7 +3,7 @@ import { statSync } from 'node:fs';
 import { loadConfig } from '../config/load.js';
 import type { EventLog, EventLogReadOnly } from '../event-log/open.js';
 import type { Deps } from '../platform/deps.js';
-import { refuse } from './errors.js';
+import { refused } from '../platform/errors.js';
 
 export interface CommandResult {
   exitCode: number;
@@ -56,15 +56,20 @@ export async function installWorktree(options: InstallWorktreeOptions): Promise<
   const { deps, path, runId } = options;
 
   if (!isDirectory(path)) {
-    throw refuse('worktree_invalid', `${path} is not an existing worktree.`, path, 'Create the worktree first.');
+    throw refused({
+      code: 'worktree_invalid',
+      message: `${path} is not an existing worktree.`,
+      where: path,
+      next: 'Create the worktree first.',
+    });
   }
   if (alreadyInstalled(options.reader, runId, path)) {
-    throw refuse(
-      'worktree_already_installed',
-      `The install command already ran in ${path} for run ${runId}.`,
-      path,
-      'Continue with the run. To install again, remove the worktree and create it again.',
-    );
+    throw refused({
+      code: 'worktree_already_installed',
+      message: `The install command already ran in ${path} for run ${runId}.`,
+      where: path,
+      next: 'Continue with the run. To install again, remove the worktree and create it again.',
+    });
   }
 
   const command = loadConfig({ env: options.env, repoPath: options.repoPath }).config.install;
@@ -84,11 +89,11 @@ export async function installWorktree(options: InstallWorktreeOptions): Promise<
   }
 
   if (exitCode !== 0) {
-    throw refuse(
-      'worktree_install_failed',
-      `The install command exited with code ${exitCode}.`,
-      path,
-      'Read the install output, fix the cause, then run the install again.',
-    );
+    throw refused({
+      code: 'worktree_install_failed',
+      message: `The install command exited with code ${exitCode}.`,
+      where: path,
+      next: 'Read the install output, fix the cause, then run the install again.',
+    });
   }
 }

@@ -95,7 +95,7 @@ function checkoutOf(env: NodeJS.ProcessEnv, path: string): { repoPath: string } 
   const dotGit = join(path, '.git');
   if (statSync(dotGit).isDirectory()) {
     // A standalone clone: its origin is the work repo. `removeWorktree` checks that before it deletes anything.
-    const origin = runGit(env, path, ['config', '--get', 'remote.origin.url']);
+    const origin = runGit(env, path, ['config', '--get', 'remote.origin.url'], { profile: 'user' });
     return origin.ok && origin.stdout !== '' ? { repoPath: origin.stdout } : { missing: `${path} has no origin to tell which work repo it came from.` };
   }
   // A linked worktree: `.git` holds `gitdir: <checkout>/.git/worktrees/<name>`.

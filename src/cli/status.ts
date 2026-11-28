@@ -7,7 +7,7 @@ import { createPosixProcessTable, type ProcessTable } from '../ports/process-tab
 import { diskReport, measureDiskUse, renderDisk, type MeasureDisk } from '../retention/disk-usage.js';
 import { isSlug } from '../run-folder/path.js';
 import { listRuns, type StatusRow } from '../status/list-runs.js';
-import { refuse } from './checkout.js';
+import { refused } from '../platform/errors.js';
 import type { CommandDef } from './router.js';
 
 /** What a test can inject into the command; the rest comes from the real system. */
@@ -63,12 +63,12 @@ export function createStatusCommand(options: Partial<StatusCommandOptions> = {})
     run: async ({ positionals }) => {
       const ticket = positionals[0];
       if (ticket !== undefined && !isSlug(ticket)) {
-        throw refuse(
-          'ticket_invalid',
-          `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
-          'ticket',
-          'Pass the ticket key, for example `factory status FE-123`, or no ticket to list every run.',
-        );
+        throw refused({
+          code: 'ticket_invalid',
+          message: `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
+          where: 'ticket',
+          next: 'Pass the ticket key, for example `factory status FE-123`, or no ticket to list every run.',
+        });
       }
       const env = process.env;
       // A home with no event log has no runs. Opening it writably would create it, so it is not opened at all.
