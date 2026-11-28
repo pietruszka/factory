@@ -26,7 +26,7 @@ export type MeasureDisk = (env: NodeJS.ProcessEnv) => DiskUse;
 const UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB'] as const;
 
 /** Bytes in the largest fitting binary unit: `512 B`, `4.0 KiB`, `11.0 GiB`. */
-export function formatBytes(bytes: number): string {
+function formatBytes(bytes: number): string {
   let value = bytes;
   let unit = 0;
   while (value >= 1024 && unit < UNITS.length - 1) {

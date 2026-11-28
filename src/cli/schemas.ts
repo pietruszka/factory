@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { EXIT_CODES } from './exit-codes.js';
 
 /** One problem in the `--json` envelope. */
-export const CliErrorEntrySchema = z.object({
+const CliErrorEntrySchema = z.object({
   code: z.string().min(1),
   message: z.string(),
   where: z.string().optional(),
@@ -32,5 +32,4 @@ export const CliOutputSchema = z
     message: 'ok must be true exactly when exit_code is 0',
   });
 
-export type CliErrorEntry = z.infer<typeof CliErrorEntrySchema>;
 export type CliOutput = z.infer<typeof CliOutputSchema>;

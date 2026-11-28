@@ -5,7 +5,7 @@ import { FactoryError } from '../platform/errors.js';
 import { runGit } from '../worktree/git.js';
 
 /** A git failure of this module. The worktree or the temp folder is in a state the factory cannot handle. */
-export function gitFailure(what: string, cwd: string, stderr: string): FactoryError {
+function gitFailure(what: string, cwd: string, stderr: string): FactoryError {
   return new FactoryError({
     code: 'write_scope_git_failed',
     message: `Git could not ${what}: ${stderr || 'no error text'}`,

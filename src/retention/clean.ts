@@ -13,7 +13,7 @@ export interface ApplyRetentionOptions {
   codeHost: CodeHost;
 }
 
-export interface RetentionWorktree {
+interface RetentionWorktree {
   run_id: string;
   path: string;
 }

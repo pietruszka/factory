@@ -108,17 +108,43 @@ describe('factory dev-init --sample todo-v0 writes the repo config', () => {
     expect(pkg.scripts.test).toMatch(/\bvitest\b/);
   });
 
-  test('npm run dev:init still creates a throwaway factory home', () => {
+  test('factory dev-init <path> creates a throwaway factory home without unpacking', async () => {
     const home = makeTempHome();
     const factoryHome = join(home, 'factory-dev-home');
+    useEnv(home);
 
-    runDevInit(factoryHome, envFor(home));
+    const run = await sample(factoryHome);
 
+    expect(run.exitCode).toBe(0);
+    expect(parseEnvelope(run)).toMatchObject({ command: 'dev-init', ok: true, exit_code: 0 });
     expect(existsSync(join(factoryHome, '.factory-dev-home'))).toBe(true);
     expect(existsSync(join(factoryHome, 'config.yaml'))).toBe(true);
-    // Without --sample nothing is unpacked and no repo config is written.
     expect(existsSync(join(factoryHome, 'repos'))).toBe(false);
     expect(existsSync(join(factoryHome, 'cache'))).toBe(false);
+  });
+
+  test('a path and --sample together are refused with exit 2', async () => {
+    const home = makeTempHome();
+    const factoryHome = join(home, 'factory-dev-home');
+    useEnv(home);
+
+    const run = await sample(factoryHome, '--sample', 'todo-v0');
+
+    expect(run.exitCode).toBe(2);
+    expect(parseEnvelope(run).errors[0]?.code).toBe('invalid_usage');
+    expect(existsSync(factoryHome)).toBe(false);
+  });
+
+  test('a path the home rules reject is refused with exit 2', async () => {
+    const home = makeTempHome();
+    const forbidden = join(home, '.factory');
+    useEnv(home);
+
+    const run = await sample(forbidden);
+
+    expect(run.exitCode).toBe(2);
+    expect(parseEnvelope(run).errors[0]?.code).toBe('dev_home_invalid');
+    expect(existsSync(forbidden)).toBe(false);
   });
 
   test('an unknown --sample name is refused with exit 2, lists the known tags and writes nothing', async () => {

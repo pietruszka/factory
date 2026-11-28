@@ -14,13 +14,13 @@ import { createFakeDeps, type FakeDeps } from './fake-deps.js';
 import { errorFields, eventLogSandbox, runInput, track, type EventLogSandbox } from './event-log.js';
 
 /** Scripts a matching repo defines. */
-export const DEFAULT_SCRIPTS: Record<string, string> = {
+const DEFAULT_SCRIPTS: Record<string, string> = {
   lint: 'eslint .',
   typecheck: 'tsc --noEmit',
   test: 'vitest run',
 };
 
-export const DEFAULT_GATES: Record<string, string | null> = {
+const DEFAULT_GATES: Record<string, string | null> = {
   lint: 'npm run lint',
   typecheck: 'npm run typecheck',
   test: 'npm test',

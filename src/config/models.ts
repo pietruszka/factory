@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const MODEL_ROLES = ['planner', 'builder', 'reviewer', 'visionJudge'] as const;
 export type ModelRole = (typeof MODEL_ROLES)[number];
 
-export const ModelRoleConfigSchema = z.strictObject({
+const ModelRoleConfigSchema = z.strictObject({
   cli: z.string().min(1).nullable(),
   model: z.string().min(1),
   family: z.string().min(1),
@@ -20,7 +20,7 @@ export const CompleteModelsSectionSchema = z.strictObject({
 
 export const ModelsSectionSchema = CompleteModelsSectionSchema.partial().default({});
 
-export type ModelRoleConfig = z.infer<typeof ModelRoleConfigSchema>;
+type ModelRoleConfig = z.infer<typeof ModelRoleConfigSchema>;
 export type ModelsSection = z.infer<typeof ModelsSectionSchema>;
 export type CompleteModelsSection = z.infer<typeof CompleteModelsSectionSchema>;
 

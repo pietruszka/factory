@@ -32,6 +32,7 @@ function crc32(buffer: Buffer): number {
 }
 
 /** The bytes of a zip holding `entries`, in the given order. */
+/** @public */
 export function buildZip(entries: ZipEntry[]): Buffer {
   const locals: Buffer[] = [];
   const centrals: Buffer[] = [];

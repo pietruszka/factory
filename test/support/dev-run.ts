@@ -31,10 +31,10 @@ const MARKER = '.factory-dev-home';
  * - `unset`: the same default home, with `FACTORY_HOME` not set when the CLI runs.
  * Every one of them is inside a fresh temp HOME.
  */
-export type HomeKind = 'throwaway' | 'unmarked' | 'default' | 'unset';
+type HomeKind = 'throwaway' | 'unmarked' | 'default' | 'unset';
 
 /** `sandbox`: the run's repo is at `<cache>/sandbox/todo-app`. `elsewhere`: a disposable repo outside the cache. */
-export type RepoKind = 'sandbox' | 'elsewhere';
+type RepoKind = 'sandbox' | 'elsewhere';
 
 export interface DevRunOptions {
   home?: HomeKind;

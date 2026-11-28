@@ -8,7 +8,7 @@ export interface GitResult {
 }
 
 /** How much of the user's git config the command may see. */
-export type GitProfile = 'user' | 'isolated';
+type GitProfile = 'user' | 'isolated';
 
 export interface RunGitOptions {
   /**

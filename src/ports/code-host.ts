@@ -9,7 +9,7 @@ export interface PullRequest {
   mergedAt?: string | null;
 }
 
-export type CodeHostWrite = 'push' | 'openDraftPr';
+type CodeHostWrite = 'push' | 'openDraftPr';
 
 export interface CodeHost {
   fetchPullRequest(repo: string, number: number): Promise<PullRequest>;

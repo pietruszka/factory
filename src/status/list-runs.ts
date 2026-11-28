@@ -51,7 +51,7 @@ export const StatusDocumentSchema = z.strictObject({
 });
 
 /** How many finished runs are listed besides the active ones. */
-export const RECENT_RUNS = 10;
+const RECENT_RUNS = 10;
 
 export interface ListRunsOptions {
   reader: EventLogReadOnly;

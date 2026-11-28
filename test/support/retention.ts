@@ -17,6 +17,7 @@ export const MINUTE = 60_000;
 export const DAY = 24 * 60 * MINUTE;
 export const GIB = 1024 ** 3;
 
+/** @public */
 export const iso = (ms: number): string => new Date(ms).toISOString();
 
 /** Every file is this many bytes, so disk totals in tests are independent literals. */
@@ -47,7 +48,7 @@ export const KEPT_FILES = [
 /** Bytes of one run folder written by `seed`. */
 export const RUN_FOLDER_BYTES = (OLD_ARTIFACTS.length + KEPT_FILES.length) * FILE_BYTES;
 
-export interface SeedOptions {
+interface SeedOptions {
   runId: string;
   ticket: string;
   /** Defaults to `passed`. */
@@ -67,7 +68,7 @@ export interface SeedOptions {
   worktree?: boolean;
 }
 
-export interface SeededRun {
+interface SeededRun {
   runId: string;
   ticket: string;
   /** The worktree path (it exists only when `worktree` was not false). */

@@ -5,7 +5,7 @@ import type { EventLog, EventLogReadOnly } from '../event-log/open.js';
 import type { Deps } from '../platform/deps.js';
 import { refused } from '../platform/errors.js';
 
-export interface CommandResult {
+interface CommandResult {
   exitCode: number;
 }
 

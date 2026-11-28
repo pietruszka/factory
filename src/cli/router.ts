@@ -12,14 +12,14 @@ import { statusCommand } from './status.js';
 type ParsedValues = ReturnType<typeof parseArgs>['values'];
 
 /** What a command handler returns on success; the router builds the envelope around it. */
-export interface CommandResult {
+interface CommandResult {
   message: string;
   data?: unknown;
   /** What to run next, for example `factory resume FE-123`. Becomes `next_command` in the envelope; null when absent. */
   nextCommand?: string;
 }
 
-export interface CommandContext {
+interface CommandContext {
   /** Parsed values of the command's own flags. */
   values: ParsedValues;
   /** The command's positional arguments, one per name in `CommandDef.positionals`, in order. */

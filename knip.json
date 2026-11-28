@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/cli/main.ts",
+    "scripts/*.ts",
+    "test/**/*.test.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "scripts/*.ts"
+  ],
+  "ignore": [
+    "test/support/resume-child.ts",
+    "scripts/sandbox/**"
+  ],
+  "ignoreBinaries": ["agent"],
+  "ignoreDependencies": ["vue"]
+}

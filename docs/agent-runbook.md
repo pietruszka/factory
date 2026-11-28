@@ -9,7 +9,7 @@ This page is for a coding agent that debugs the factory against the sandbox only
 
 ## Boundaries
 
-Use a throwaway factory home. `factory dev-init` writes the marker file `.factory-dev-home` in that home. Set `FACTORY_HOME` to the throwaway factory home before any other factory command. A home without that marker is refused.
+Use a throwaway factory home. `factory dev-init <path>` writes the marker file `.factory-dev-home` and a starter `config.yaml` in that home. Set `FACTORY_HOME` to the throwaway factory home before any other factory command. A home without that marker is refused.
 
 Work in the sandbox only. The unpacked sample repo is `todo-app`, under the cache sandbox folder of that home. `factory dev-approve` records an approval only for a fake-worker run of that sandbox repo.
 
@@ -25,6 +25,7 @@ factory status FE-123 --json
 factory kill FE-123
 factory resume FE-123
 factory clean
+factory dev-init /tmp/example-factory-home
 factory dev-init --sample todo-v0
 factory dev-approve FE-123
 factory version

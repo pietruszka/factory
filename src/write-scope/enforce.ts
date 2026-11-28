@@ -4,7 +4,7 @@ import { restorePaths } from './restore.js';
 import { diffSnapshots, takeSnapshot } from './snapshot.js';
 import type { WriteScopeOptions } from './types.js';
 
-export const WRITE_SCOPE_EVENT = 'write_scope';
+const WRITE_SCOPE_EVENT = 'write_scope';
 const GATE = 'write_scope';
 
 /** One worker attempt that is checked: where it runs and who it is. */

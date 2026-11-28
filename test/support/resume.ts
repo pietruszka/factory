@@ -19,7 +19,7 @@ import {
 import { RESUME_COST, RESUME_STAGES } from './resume-stages.js';
 
 /** A seeded step checkpoint of `run-1`. */
-export interface SeededStep {
+interface SeededStep {
   step: string;
   attempt?: number;
   status: 'done' | 'failed' | 'running';

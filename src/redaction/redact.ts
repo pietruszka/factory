@@ -6,10 +6,10 @@
  * 2. a best-effort scan for well-known token prefixes and PEM private-key blocks.
  */
 
-export const REDACTED = '[REDACTED]';
+const REDACTED = '[REDACTED]';
 
 /** Exact-value secrets shorter than this are skipped: they would blank out ordinary text. */
-export const MIN_SECRET_LENGTH = 6;
+const MIN_SECRET_LENGTH = 6;
 
 const SECRET_NAME_PATTERN = /(KEY|TOKEN|SECRET|PASSWORD|PASS|AUTH|CREDENTIAL)/i;
 

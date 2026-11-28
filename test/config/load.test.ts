@@ -869,7 +869,7 @@ describe('loadConfig file locations', () => {
     expect(error.code).toBe('config_missing');
     expect(error.exitCode).toBe(2);
     expect(error.where).toBe(box.globalFile);
-    expect(error.next).toContain('dev:init');
+    expect(error.next).toContain('factory dev-init');
     expect(refusal(() => loadGlobalConfig({ env: box.env })).code).toBe('config_missing');
   });
 

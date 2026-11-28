@@ -1,8 +1,6 @@
 import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 import { runDevInit } from '../../src/dev/dev-init.js';
@@ -38,32 +36,5 @@ describe('runDevInit', () => {
     expect(config).not.toContain('protected-paths');
     expect(existsSync(join(throwawayHome, '.factory'))).toBe(false);
     expect(existsSync(join(unrelatedHome, 'config.yaml'))).toBe(false);
-  });
-});
-
-describe('dev:init entry point', () => {
-  test('runs via npm script and creates home-level config in the provided throwaway home', () => {
-    const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
-    const userHome = makeTempDir('factory-user-home-');
-    const throwawayHome = join(userHome, 'cli-dev-home');
-
-    const result = spawnSync('npm', ['run', 'dev:init', '--', throwawayHome], {
-      cwd: resolve(repoRoot),
-      env: {
-        ...process.env,
-        HOME: userHome,
-      },
-      encoding: 'utf8',
-    });
-
-    expect(result.status).toBe(0);
-    expect(existsSync(join(throwawayHome, '.factory-dev-home'))).toBe(true);
-    expect(existsSync(join(throwawayHome, 'config.yaml'))).toBe(true);
-    expect(existsSync(join(throwawayHome, '.factory'))).toBe(false);
-    const config = readFileSync(join(throwawayHome, 'config.yaml'), 'utf8');
-    expect(config).toContain('models:');
-    expect(config).toContain('planner:');
-    expect(config).toContain('model: "gpt-5.3-codex-high"');
-    expect(config).not.toContain('protected-paths');
   });
 });

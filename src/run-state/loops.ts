@@ -10,7 +10,7 @@ export interface LoopDecision {
 }
 
 /** Loops allowed per kind before the run goes to a human. */
-export const MAX_LOOPS = 2;
+const MAX_LOOPS = 2;
 
 const EVENT_TYPE = 'loop';
 

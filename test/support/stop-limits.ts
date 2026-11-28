@@ -20,7 +20,7 @@ export interface CommandResult {
 }
 
 /** Runs one factory command. Resolves when it ends; may never resolve for a hung command. */
-export type Executor = (argv: readonly string[]) => Promise<CommandResult>;
+type Executor = (argv: readonly string[]) => Promise<CommandResult>;
 
 export interface StopLimitOptions {
   deps: Deps;
@@ -29,7 +29,7 @@ export interface StopLimitOptions {
   kill: (argv: readonly string[]) => Promise<void>;
 }
 
-export type StopReason =
+type StopReason =
   | 'identical_failures'
   | 'command_limit'
   | 'command_timeout'
@@ -37,7 +37,7 @@ export type StopReason =
   | 'resume_limit'
   | 'retry_limit';
 
-export type CommandOutcome =
+type CommandOutcome =
   /** The command ran; its result is passed through. */
   | { kind: 'ran'; result: CommandResult }
   /** The command was not started: a limit was already reached. */
@@ -47,7 +47,7 @@ export type CommandOutcome =
   /** The session is over. */
   | { kind: 'ended'; reason: StopReason };
 
-export interface RunOptions {
+interface RunOptions {
   /** The cause a `resume` answers, for example `budget`. At most one resume per cause. */
   cause?: string;
 }

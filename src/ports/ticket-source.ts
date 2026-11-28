@@ -9,7 +9,7 @@ export interface TicketSource {
   fetchTicket(key: string): Promise<Ticket>;
 }
 
-export interface TicketSourceCall {
+interface TicketSourceCall {
   method: 'fetchTicket';
   key: string;
 }
