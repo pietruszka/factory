@@ -22,7 +22,7 @@ export interface ScopeRow {
 }
 
 /** The globs a role may write: a non-empty `role_write_globs` entry replaces the default as a whole. */
-export function writeGlobsFor(role: string, config: Pick<WriteScopeConfig, 'role_write_globs'>): readonly string[] {
+function writeGlobsFor(role: string, config: Pick<WriteScopeConfig, 'role_write_globs'>): readonly string[] {
   const override = (config.role_write_globs as Readonly<Record<string, readonly string[] | undefined>>)[role];
   return override !== undefined && override.length > 0 ? override : (DEFAULT_WRITE_GLOBS[role] ?? []);
 }

@@ -22,15 +22,16 @@ export const MINUTE = 60_000;
 export const HOUR = 60 * MINUTE;
 export const DAY = 24 * HOUR;
 
+/** @public */
 export const iso = (ms: number): string => new Date(ms).toISOString();
 
-export interface SeedStep {
+interface SeedStep {
   step: string;
   attempt?: number;
   status: 'pending' | 'running' | 'done' | 'failed';
 }
 
-export interface SeedRun {
+interface SeedRun {
   runId: string;
   ticket: string;
   repo?: string;
@@ -65,7 +66,7 @@ export interface StatusFixture {
   snapshot: () => Snapshot;
 }
 
-export interface Snapshot {
+interface Snapshot {
   tree: Record<string, string>;
   tables: Record<string, Array<Record<string, unknown>>>;
 }

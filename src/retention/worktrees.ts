@@ -12,7 +12,7 @@ import { realPathInside } from './confine.js';
 import type { ApplyRetentionOptions, RetentionResult, RetentionSkip } from './clean.js';
 
 /** A worktree goes more than this long after the merge or the abandon (ADR-014). */
-export const WORKTREE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const WORKTREE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** The run fields retention reads. */
 export interface RetentionRun {

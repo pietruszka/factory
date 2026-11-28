@@ -12,7 +12,7 @@ export const RawStepInputSchema = z.object({
 
 export type RawStepInput = z.infer<typeof RawStepInputSchema>;
 
-export const StepResultSchema = z.strictObject({
+const StepResultSchema = z.strictObject({
   status: z.enum(['ok', 'malformed', 'timeout', 'exit_nonzero']),
   text: z.string(),
   usage: z.unknown().optional(),

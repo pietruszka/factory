@@ -3,7 +3,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { SCHEMA_VERSION } from './schema.js';
 import { inTransaction } from './sql.js';
 
-export interface Migration {
+interface Migration {
   /** The schema version the database has after this batch. Versions are consecutive from 1. */
   version: number;
   sql: string;
@@ -20,7 +20,7 @@ const appendOnlyTriggers = APPEND_ONLY_TABLES.flatMap((table) => [
 ]).join('\n');
 
 // Shipped batches are never edited: a change is a new entry with the next version number.
-export const MIGRATIONS: readonly Migration[] = [
+const MIGRATIONS: readonly Migration[] = [
   {
     version: 1,
     sql: `

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { stringify } from 'yaml';
 
+import { runDevInit } from '../dev/dev-init.js';
 import { resolveFactoryHome } from '../dev/home.js';
 import { FactoryError } from '../platform/errors.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
@@ -12,6 +13,7 @@ import type { CommandDef } from './router.js';
 
 const KNOWN_TAGS = SAMPLE_TAGS.join(', ');
 const REPO_FILE = 'todo-app.yaml';
+const MAKE_HOME_NEXT = 'Run `factory dev-init <throwaway-folder>`, then set FACTORY_HOME to that folder.';
 
 /**
  * The per-repo config of the sample app: matched by absolute path (it has no remote), gates as the sample's npm
@@ -36,7 +38,7 @@ export function throwawayHome(env: NodeJS.ProcessEnv, command = 'dev-init --samp
       'dev_home_required',
       `FACTORY_HOME is not set. ${command} only works in a throwaway factory home.`,
       'FACTORY_HOME',
-      'Run `npm run dev:init -- <throwaway-folder>`, then set FACTORY_HOME to that folder.',
+      MAKE_HOME_NEXT,
     );
   }
   resolveFactoryPaths(env); // refuses a home or cache inside Documents, Desktop or Downloads (protected_folder)
@@ -48,29 +50,59 @@ export function throwawayHome(env: NodeJS.ProcessEnv, command = 'dev-init --samp
       'dev_home_invalid',
       error instanceof Error ? error.message : String(error),
       'FACTORY_HOME',
-      'Run `npm run dev:init -- <throwaway-folder>` and set FACTORY_HOME to that folder.',
+      MAKE_HOME_NEXT,
     );
   }
 }
 
 /**
- * `factory dev-init --sample <tag>`: unpacks the checked-in to-do sample repo under the throwaway factory home's cache folder,
- * checks out the tag and writes `<home>/repos/todo-app.yaml`, matched by the sample's absolute path.
- * Starts no agent and touches no run, worktree or baseline report.
+ * `factory dev-init [path]`: with a path, creates the throwaway home and starter config.yaml (no sample).
+ * `factory dev-init --sample <tag>`: unpacks the checked-in to-do sample under an existing throwaway home.
+ * Path and `--sample` together are refused. Starts no agent and touches no run, worktree or baseline report.
  */
 export const devInitCommand: CommandDef = {
-  description: 'Dev only: write the sample to-do repo config into a throwaway factory home.',
+  description: 'Dev only: create a throwaway factory home, or unpack the sample into one.',
   skipGitCheck: true,
+  optionalPositionals: ['path'],
   options: { sample: { type: 'string' } },
-  run: ({ values }) => {
+  run: ({ values, positionals }) => {
     const env = process.env;
     const tag = typeof values.sample === 'string' ? values.sample : undefined;
+    const path = positionals[0];
+
+    if (path !== undefined && tag !== undefined) {
+      throw refuse(
+        'invalid_usage',
+        'factory dev-init takes a path or --sample, not both.',
+        'dev-init',
+        'Run `factory dev-init <path>` to make the home, or `factory dev-init --sample todo-v0` after FACTORY_HOME is set.',
+      );
+    }
+
+    if (path !== undefined) {
+      try {
+        const configPath = runDevInit(path, env);
+        return {
+          message: `Created ${configPath}`,
+          data: { schema_version: 1, config_path: configPath },
+        };
+      } catch (error) {
+        if (error instanceof FactoryError) throw error;
+        throw refuse(
+          'dev_home_invalid',
+          error instanceof Error ? error.message : String(error),
+          path,
+          MAKE_HOME_NEXT,
+        );
+      }
+    }
+
     if (tag === undefined) {
       throw refuse(
         'sample_required',
-        'dev-init needs --sample <tag>.',
+        'dev-init needs a path or --sample <tag>.',
         'dev-init',
-        `Run \`factory dev-init --sample todo-v0\`. Known samples: ${KNOWN_TAGS}. To make the throwaway home itself, run \`npm run dev:init -- <path>\`.`,
+        `Run \`factory dev-init <path>\` to make a throwaway home, or \`factory dev-init --sample todo-v0\`. Known samples: ${KNOWN_TAGS}.`,
       );
     }
     if (!SAMPLE_TAGS.includes(tag)) {
@@ -79,14 +111,14 @@ export const devInitCommand: CommandDef = {
 
     const home = throwawayHome(env);
     const { reposDir } = resolveFactoryPaths(env);
-    const { path } = unpackTodoSandbox({ env, sample: tag });
+    const { path: sandboxPath } = unpackTodoSandbox({ env, sample: tag });
 
     mkdirSync(reposDir, { recursive: true });
     const repoFile = join(reposDir, REPO_FILE);
-    writeFileSync(repoFile, repoConfigYaml(path), 'utf8');
+    writeFileSync(repoFile, repoConfigYaml(sandboxPath), 'utf8');
     return {
-      message: `Sample ${tag} is ready at ${path}.\nWrote ${repoFile} (match.path is the sample path) in ${home}.`,
-      data: { schema_version: 1, sample: tag, sandbox_path: path, repo_config: repoFile },
+      message: `Sample ${tag} is ready at ${sandboxPath}.\nWrote ${repoFile} (match.path is the sample path) in ${home}.`,
+      data: { schema_version: 1, sample: tag, sandbox_path: sandboxPath, repo_config: repoFile },
     };
   },
 };

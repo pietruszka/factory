@@ -7,7 +7,7 @@ import { cleanupTempHomes, makeTempHome } from './temp-home.js';
 
 // @types/node 20 has no typings for node:sqlite, so the driver is loaded with createRequire
 // and typed here with the few members the tests use.
-export interface RawStatement {
+interface RawStatement {
   all(...params: Array<string | number | null>): Array<Record<string, unknown>>;
   get(...params: Array<string | number | null>): Record<string, unknown> | undefined;
   run(...params: Array<string | number | null>): unknown;
@@ -42,7 +42,7 @@ export function track<T extends EventLog | EventLogReadOnly>(log: T): T {
 }
 
 /** Closes every database opened through this module. Call from afterEach, before cleanupTempHomes. */
-export function closeAllDatabases(): void {
+function closeAllDatabases(): void {
   for (const log of openLogs.splice(0)) {
     try {
       log.close();

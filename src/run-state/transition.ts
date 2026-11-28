@@ -19,7 +19,7 @@ export const PHASES = [
 ] as const satisfies readonly RunStatus[];
 
 /** Statuses a run can stop in from any phase. */
-export const STOP_STATUSES = [
+const STOP_STATUSES = [
   'refused',
   'config_drift',
   'needs_human',

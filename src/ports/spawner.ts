@@ -13,7 +13,7 @@ export interface SpawnRequest {
   env?: Readonly<Record<string, string>>;
 }
 
-export interface SpawnedProcess {
+interface SpawnedProcess {
   pid: number;
   exit: Promise<{ code: number | null; signal: string | null }>;
   /** Everything the child wrote to stdout and stderr, once both pipes closed. Absent when not captured. */

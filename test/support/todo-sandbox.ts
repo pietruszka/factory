@@ -51,6 +51,7 @@ export function listTree(root: string): string[] {
 }
 
 /** Path -> sha256 of the content for every regular file under `root`, skipping the `.git` folder. */
+/** @public */
 export function fileDigests(root: string): Record<string, string> {
   const digests: Record<string, string> = {};
   for (const rel of listTree(root)) {

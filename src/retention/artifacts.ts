@@ -9,7 +9,7 @@ import type { ApplyRetentionOptions, RetentionArtifacts } from './clean.js';
 import { isOlderThan, type RetentionRun } from './worktrees.js';
 
 /** Large artifacts go more than this long after the run ended (ADR-014). */
-export const ARTIFACT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const ARTIFACT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** What goes from a run folder: the ticket snapshot, the prompts and the evidence (diff, gate logs, ...). */
 const ARTIFACTS = ['ticket.json', 'prompts', 'evidence'] as const;

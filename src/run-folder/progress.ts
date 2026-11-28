@@ -6,7 +6,7 @@ import { writeSecureFile } from './files.js';
 import { runFolderPath } from './path.js';
 
 /** What the pipeline records about itself in the run folder's `plan.md`. */
-export interface PlanProgress {
+interface PlanProgress {
   currentStep: string;
   doneSteps: readonly string[];
   lastResult: string;

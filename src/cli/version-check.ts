@@ -5,8 +5,8 @@ import { FactoryError } from '../platform/errors.js';
 import { EXIT_CODES } from './exit-codes.js';
 
 /** Oldest supported versions (D-38 for Node; git is the plan's proposed minimum). */
-export const MIN_NODE = '22.13';
-export const MIN_GIT = '2.40';
+const MIN_NODE = '22.13';
+const MIN_GIT = '2.40';
 
 export interface EnvironmentProbe {
   /** For example `v22.13.0`. */

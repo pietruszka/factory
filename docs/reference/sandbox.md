@@ -100,11 +100,11 @@ All are `FactoryError` with exit 2.
 ## `factory dev-init --sample <tag>`
 
 ```sh
-npm run dev:init -- /tmp/example-factory-home
+factory dev-init /tmp/example-factory-home
 FACTORY_HOME=/tmp/example-factory-home factory dev-init --sample todo-v0
 ```
 
-`npm run dev:init -- <path>` is unchanged: it creates a throwaway home with the dev-home marker and a starter `config.yaml`, and nothing else; it does not unpack the sample. `dev-init --sample` then:
+`factory dev-init <path>` creates a throwaway home with the dev-home marker and a starter `config.yaml`, and nothing else; it does not unpack the sample. A path and `--sample` together are refused. `dev-init --sample` then:
 
 1. Refuses unless `FACTORY_HOME` is set to an existing home that has the dev-home marker.
 2. Unpacks the zip and checks out the tag (detached HEAD). It does not install anything.
@@ -116,10 +116,11 @@ The command starts no agent. It does not call preflight, `markStaleRuns`, `killR
 
 | Code | When |
 | --- | --- |
-| `sample_required` | No `--sample`. |
+| `sample_required` | No path and no `--sample`. |
+| `invalid_usage` | A path and `--sample` together. |
 | `sample_unknown` | As above. |
 | `dev_home_required` | `FACTORY_HOME` is unset. Nothing is written under the default home or cache. |
-| `dev_home_invalid` | The home does not exist, has no dev-home marker, or is the default or a private folder. |
+| `dev_home_invalid` | Creating a home fails the home rules, or `--sample` is aimed at a home that does not exist, has no marker, or is the default or a private folder. |
 | `protected_folder`, `sandbox_symlink`, `zip_unsafe` | As above. |
 
 `--json` prints the envelope with `data.sample`, `data.sandbox_path` and `data.repo_config`.

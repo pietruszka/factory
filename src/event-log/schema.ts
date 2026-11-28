@@ -33,9 +33,9 @@ export const RUN_STATUSES = [
  */
 export const NON_RESUMABLE_RUN_STATUSES = ['passed', 'refused', 'breach'] as const;
 
-export const STEP_STATUSES = ['pending', 'running', 'done', 'failed'] as const;
+const STEP_STATUSES = ['pending', 'running', 'done', 'failed'] as const;
 
-export const OUTCOMES = ['accepted', 'accepted_with_edits', 'rejected', 'abandoned'] as const;
+const OUTCOMES = ['accepted', 'accepted_with_edits', 'rejected', 'abandoned'] as const;
 
 const text = z.string().min(1);
 const isoTime = z.iso.datetime({ offset: true });

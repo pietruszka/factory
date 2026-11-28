@@ -1,6 +1,6 @@
 import { runCommand, type RunCommand } from './run-command.js';
 
-export interface ProcessRecord {
+interface ProcessRecord {
   pid: number;
   command: string;
   startedAt: number;

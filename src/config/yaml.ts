@@ -22,7 +22,7 @@ export interface YamlConfig {
 }
 
 /** Config files larger than this are refused before parsing (1 MiB). */
-export const MAX_CONFIG_BYTES = 1_048_576;
+const MAX_CONFIG_BYTES = 1_048_576;
 
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 

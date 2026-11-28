@@ -12,13 +12,12 @@ description: The only npm scripts in the factory repository.
 | `typecheck` | `tsc --noEmit` | Strict TypeScript check of `src/`, `test/` and `scripts/` |
 | `build` | `tsc -p tsconfig.build.json` | Compiles `src/` to `dist/` (git-ignored); `dist/src/cli/main.js` is the `factory` bin |
 | `build:watch` | `npm run build -- --watch` | Same as `build`, leaves `tsc` running and recompiles when `src/` changes |
-| `lint` | `eslint src test scripts` | ESLint over `src/`, `test/` and `scripts/`: type-aware rules on `src/` only; clock and randomness ban (P-14) and no hard-coded home paths (NFR-33) on `src/` |
+| `lint` | `eslint src test scripts && knip` | ESLint over `src/`, `test/` and `scripts/` (type-aware rules on `src/` only; clock and randomness ban (P-14) and no hard-coded home paths (NFR-33) on `src/`), then knip for unused exports and dependencies |
 | `test` | `vitest run` | All tests |
 | `test:l3` | `tsx scripts/run-layer.ts` | Only the `test/l3/` folder, with the time printed and a 120 s budget |
 | `test:sample-gates` | `tsx scripts/sample-gates.ts` | Opt-in, needs network: installs the to-do sample in a temp folder and runs its gates. Not part of `test` or `test:l3`. See [Sandbox](/reference/sandbox) |
 | `check` | `typecheck && lint && test && test:l3 && build && docs:build` | All quality gates in order; stops at the first failure |
 | `sandbox:pack` | `tsx scripts/pack-todo-sandbox.ts` | Dev only: rebuilds the to-do sample zip and manifest from `scripts/sandbox/todo-app/`. See [Sandbox](/reference/sandbox) |
-| `dev:init` | `tsx src/dev/dev-init.ts` | Creates a throwaway factory home |
 | `probe` | `tsx src/probe/probe.ts` | Live CLI probe (needs `FACTORY_LIVE`) |
 | `preflight` | `tsx src/preflight/models.ts` | Model preflight |
 | `docs:dev` | `vitepress dev docs` | Local dev server with reload |
@@ -52,7 +51,7 @@ Runs `npm run build -- --watch`: the same `tsc` command as `build`, with TypeScr
 
 ## `lint`
 
-Runs ESLint with `eslint.config.js` over `src/`, `test/` and `scripts/`. On `src/` it uses typescript-eslint `recommendedTypeChecked` (type-aware) plus two project rules: outside `src/platform/deps.ts`, clock and randomness calls are errors ("use Deps (P-14)"), and string literals that hold a user-home path are errors outside `src/platform/paths.ts`. On `test/` and `scripts/` it uses non-type-aware `recommended` only; the Deps and home-path bans do not apply there. Formatting is not checked. Details are in [VitePress config](/reference/configuration#factory-paths).
+Runs ESLint with `eslint.config.js` over `src/`, `test/` and `scripts/`, then knip. On `src/` ESLint uses typescript-eslint `recommendedTypeChecked` (type-aware) plus two project rules: outside `src/platform/deps.ts`, clock and randomness calls are errors ("use Deps (P-14)"), and string literals that hold a user-home path are errors outside `src/platform/paths.ts`. On `test/` and `scripts/` it uses non-type-aware `recommended` only; the Deps and home-path bans do not apply there. Formatting is not checked. Knip uses `knip.json` to fail on unused exports and unused dependencies (entries cover the CLI, scripts and tests; `test/support/resume-child.ts` is ignored because it is started as a child process). Details are in [VitePress config](/reference/configuration#factory-paths).
 
 ## `test`
 
@@ -99,4 +98,4 @@ The `package.json` script itself does not pin a port. CI does not run preview.
 | `npm ci` | CI, and a clean local install from the lockfile |
 | `npm install` | After you change `package.json` dependencies |
 
-Direct dev dependencies include `vitepress` at `1.6.4`, `mermaid` at `11.17.2`, `vitepress-plugin-mermaid` at `2.0.17`, `vitest` at `5.1.2`, `vite` at `6.4.6` (Vitest’s peer; VitePress keeps its own Vite 5), `tsx`, `typescript`, `eslint` at `9.39.5` and `typescript-eslint`. `engines.node` asks for Node.js `>=22.13`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.
+Direct dev dependencies include `vitepress` at `1.6.4`, `mermaid` at `11.17.2`, `vitepress-plugin-mermaid` at `2.0.17`, `vitest` at `5.1.2`, `vite` at `6.4.6` (Vitest’s peer; VitePress keeps its own Vite 5), `tsx` at `4.23.15`, `typescript` at `5.9.3`, `@types/node` at `22.20.7`, `knip` at `6.49.0`, `eslint` at `9.39.5` and `typescript-eslint`. `engines.node` asks for Node.js `>=22.13`. npm only enforces `engines` when `engine-strict` is enabled; it is not enabled here. The workflow still installs Node.js 22 so CI matches the version used to verify the build.

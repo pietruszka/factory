@@ -24,7 +24,7 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 /** Time since an event in the largest whole unit: `45s`, `5m`, `2h` or `1d`. */
-export function relativeTime(elapsedMs: number): string {
+function relativeTime(elapsedMs: number): string {
   const ms = Math.max(0, elapsedMs);
   if (ms >= DAY) return `${Math.floor(ms / DAY)}d`;
   if (ms >= HOUR) return `${Math.floor(ms / HOUR)}h`;
@@ -48,7 +48,7 @@ const cells = (row: StatusRow): string[] => [
 const HEADER = ['TICKET', 'REPO', 'FLOW', 'STATUS', 'STEP', 'COST', 'LAST EVENT'];
 
 /** A table with a header line, one line per row, in the order of `rows`. */
-export function renderRows(rows: readonly StatusRow[]): string {
+function renderRows(rows: readonly StatusRow[]): string {
   const table = [HEADER, ...rows.map(cells)];
   const widths = HEADER.map((_, column) => Math.max(...table.map((line) => line[column]?.length ?? 0)));
   return table.map((line) => line.map((cell, column) => cell.padEnd(widths[column] ?? 0)).join('  ').trimEnd()).join('\n');

@@ -18,13 +18,13 @@ The code is `src/config/`. The public functions are `loadGlobalConfig({ env })` 
 
 `<home>` comes from `resolveFactoryPaths` (see [Configuration](/reference/configuration)): `$FACTORY_HOME`, or `~/.factory`. Only those two kinds of file are read. Other extensions and sub-folders under `repos/` are ignored (`repos/<repo>/agents/` is not read yet). A `config.yaml` or `.factory/config.yaml` inside the work repo is never read.
 
-If `config.yaml` is missing, loading is refused with `config_missing`. The error names the path. Create the file, or run `npm run dev:init -- <throwaway-folder>` to make a throwaway home with a starter file.
+If `config.yaml` is missing, loading is refused with `config_missing`. The error names the path. Create the file, or run `factory dev-init <throwaway-folder>` to make a throwaway home with a starter file.
 
 Every file in `repos/` is parsed and validated on each load, so a broken file for one repo also stops loading for the others.
 
 ## Keys
 
-A file that holds only a `models:` section, as `dev:init` writes it, is valid. Unknown keys are refused.
+A file that holds only a `models:` section, as `factory dev-init` writes it, is valid. Unknown keys are refused.
 
 ### Settings in either file
 

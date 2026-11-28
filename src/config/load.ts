@@ -136,7 +136,7 @@ function readGlobal(env: NodeJS.ProcessEnv): { parsed: ParsedFile; config: Parti
       code: 'config_missing',
       message: 'The factory config file does not exist.',
       where: configPath,
-      next: `Create ${configPath}, or run \`npm run dev:init -- <throwaway-folder>\` to make a throwaway home with a starter config.`,
+      next: `Create ${configPath}, or run \`factory dev-init <throwaway-folder>\` to make a throwaway home with a starter config.`,
       exitCode: 2,
     });
   }

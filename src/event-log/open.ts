@@ -10,16 +10,7 @@ import { migrate, readSchemaVersion } from './migrations.js';
 import { SCHEMA_VERSION } from './schema.js';
 import { createWriters, type EventLogWriters } from './writers.js';
 
-export type {
-  ApprovalInput,
-  CheckRowInput,
-  EventInput,
-  OutcomeInput,
-  ProcessInput,
-  RunInput,
-  ShadowVerdictInput,
-  StepInput,
-} from './schema.js';
+export type { EventInput, RunInput } from './schema.js';
 
 // node:sqlite is loaded with createRequire because the vite-node runner that runs the tests strips
 // the node: prefix from a static import of it and then fails to resolve `sqlite`. This is still
@@ -46,7 +37,7 @@ export interface OpenReadOnlyOptions {
 }
 
 /** Values of the four durability settings on the writable connection, as SQLite reports them. */
-export interface EventLogPragmas {
+interface EventLogPragmas {
   journal_mode: string;
   /** 1 is NORMAL. */
   synchronous: number;

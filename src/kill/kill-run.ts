@@ -13,7 +13,7 @@ export interface KillRunOptions extends RunStateContext {
 
 type TreeResult = 'killed' | 'pid_reused' | 'gone';
 
-export interface KilledProcess {
+interface KilledProcess {
   pid: number;
   /** What the polite stop (`termTree`) reported. */
   term: TreeResult;
@@ -29,11 +29,11 @@ export interface KillRunResult {
 }
 
 /** The FR-31 estimate for how long a worker gets to stop on its own. */
-export const DEFAULT_GRACE_MS = 10_000;
+const DEFAULT_GRACE_MS = 10_000;
 /** How often the grace wait looks again at whether the trees are gone. */
 const POLL_MS = 50;
 
-export interface OpenProcess {
+interface OpenProcess {
   id: number;
   pid: number;
   command: string;

@@ -68,9 +68,9 @@ const TWO_MINUTES_MS = 120_000;
 const TEN_MB = 10 * 1024 * 1024;
 
 // Confirmed by `agent models` on 2026-11-20.
-export const CURSOR_AGENT_MODEL = 'gpt-5.4-nano-none';
+const CURSOR_AGENT_MODEL = 'gpt-5.4-nano-none';
 // Confirmed by `opencode models` on 2026-11-20 (1.19.5) and 2026-11-21 (2.3.2).
-export const OPENCODE_MODEL = 'opencode/beam-free';
+const OPENCODE_MODEL = 'opencode/beam-free';
 
 export function buildProbeRunnerSpecs(factoryHome: string): ProbeRunnerSpec[] {
   const sandboxRoot = join(factoryHome, 'sandbox');

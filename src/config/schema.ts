@@ -5,8 +5,7 @@ import { z } from 'zod';
 import { CompleteModelsSectionSchema, MODEL_ROLES } from './models.js';
 import { normaliseOrigin } from './origin.js';
 
-export const FLOWS = ['A', 'E', 'F', 'H'] as const;
-export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
+const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
 /** `linked`: a git worktree of the work repo. `standalone`: a local clone. Default `linked`. */
 export const WORKTREE_MODES = ['linked', 'standalone'] as const;
 
@@ -100,7 +99,7 @@ export const MergedConfigSchema = z.strictObject(CONFIG_SHAPE);
 
 export type Config = z.infer<typeof MergedConfigSchema>;
 
-export type DeepPartial<T> = T extends readonly unknown[]
+type DeepPartial<T> = T extends readonly unknown[]
   ? T
   : T extends object
     ? { [K in keyof T]?: DeepPartial<T[K]> }
@@ -149,5 +148,5 @@ const MatchSchema = z
 /** A per-repo file: the same keys as the global file, plus the `match` that selects the repo. */
 export const RepoFileSchema = z.strictObject({ ...partialShape, match: MatchSchema });
 
-export type RepoMatch = z.infer<typeof MatchSchema>;
+type RepoMatch = z.infer<typeof MatchSchema>;
 export type RepoFile = PartialConfig & { match: RepoMatch };

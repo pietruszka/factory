@@ -5,7 +5,7 @@ import { refuse } from './errors.js';
 import { allowedPathsOverlap } from './overlap.js';
 
 /** At most this many runs may be active at once (ADR-007). */
-export const MAX_ACTIVE_RUNS = 2;
+const MAX_ACTIVE_RUNS = 2;
 
 export interface AssertCanStartOptions {
   reader: EventLogReadOnly;
