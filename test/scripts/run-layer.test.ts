@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { L3_BUDGET_SECONDS, runLayer } from '../../scripts/run-layer.js';
 import { createFakeDeps } from '../support/fake-deps.js';
 
-function setup(elapsedMs: number, vitestExit = 0) {
+function setup(elapsedMs: number, vitestExit = 0, listL3Tests?: () => string[]) {
   const deps = createFakeDeps();
   const printed: string[] = [];
   const vitestArgs: string[][] = [];
@@ -13,7 +13,13 @@ function setup(elapsedMs: number, vitestExit = 0) {
     return vitestExit;
   };
   const run = () =>
-    runLayer({ deps, runVitest, print: (line) => printed.push(line), budgetSeconds: L3_BUDGET_SECONDS });
+    runLayer({
+      deps,
+      runVitest,
+      print: (line) => printed.push(line),
+      budgetSeconds: L3_BUDGET_SECONDS,
+      listL3Tests,
+    });
   return { run, printed, vitestArgs };
 }
 
@@ -41,7 +47,17 @@ describe('L3 runner', () => {
 
     await run();
 
-    expect(vitestArgs[0]).toEqual(['run', 'test/l3/', '--passWithNoTests']);
+    expect(vitestArgs[0]).toEqual(['run', 'test/l3/']);
+  });
+
+  test('an empty test/l3/ fails before vitest starts', async () => {
+    const { run, printed, vitestArgs } = setup(1_000, 0, () => []);
+
+    const result = await run();
+
+    expect(result.exitCode).toBe(1);
+    expect(printed.join('\n')).toContain('test/l3/ has no test files');
+    expect(vitestArgs).toEqual([]);
   });
 
   test('a failing vitest run fails the layer even when it is within budget', async () => {

@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 import { createSystemDeps, type Deps } from '../src/platform/deps.js';
@@ -10,17 +11,27 @@ export interface RunLayerOptions {
   print: (line: string) => void;
   /** Wall-clock budget in seconds; the run fails when it takes longer. */
   budgetSeconds?: number;
+  /** Names of the L3 test files. Defaults to `*.test.ts` in `test/l3/`. */
+  listL3Tests?: () => string[];
 }
 
 /** L3 pipeline tests must stay under two minutes (NFR-37). */
 export const L3_BUDGET_SECONDS = 120;
 
+function defaultL3Tests(): string[] {
+  // shortcut: top-level *.test.ts only, when an L3 test moves into a subfolder
+  return readdirSync('test/l3').filter((name) => name.endsWith('.test.ts'));
+}
+
 /** Runs the tests in the `test/l3/` folder and enforces the time budget. */
 export async function runLayer(opts: RunLayerOptions): Promise<{ exitCode: number }> {
-  const { deps, runVitest, print, budgetSeconds } = opts;
+  const { deps, runVitest, print, budgetSeconds, listL3Tests = defaultL3Tests } = opts;
+  if (listL3Tests().length === 0) {
+    print('test/l3/ has no test files');
+    return { exitCode: 1 };
+  }
   const startedAt = deps.now();
-  // --passWithNoTests keeps the folder green while it holds no tests.
-  const vitestExit = await runVitest(['run', 'test/l3/', '--passWithNoTests']);
+  const vitestExit = await runVitest(['run', 'test/l3/']);
   // Round up so a reported time over the budget is always shown as over it.
   const seconds = Math.ceil((deps.now() - startedAt) / 1000);
 

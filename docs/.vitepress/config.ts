@@ -56,6 +56,7 @@ export default withMermaid(defineConfig({
           { text: 'Getting started', link: '/getting-started' },
           { text: 'End-to-end flow', link: '/flow' },
           { text: 'Architecture', link: '/architecture' },
+          { text: 'Agent runbook', link: '/agent-runbook' },
         ],
       },
       {

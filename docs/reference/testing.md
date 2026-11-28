@@ -29,14 +29,14 @@ Tests use the recording fakes for outside systems, and a second static scan keep
 
 ## L3 tests and their budget
 
-Pipeline tests that drive the factory with the fake worker live in `test/l3/`. None exist yet. `npm test` runs them with everything else; `npm run test:l3` runs only that folder and checks its time.
+Pipeline tests that drive the factory with the fake worker live in `test/l3/`: `contract.test.ts`, `exit-scenarios.test.ts` and `stop-limits.test.ts`. `npm test` runs them with everything else; `npm run test:l3` runs only that folder and checks its time.
 
 | Command | Runs |
 | --- | --- |
 | `npm test` | All tests, including `test/l3/` |
-| `npm run test:l3` | Only `test/l3/` (`vitest run test/l3/ --passWithNoTests`) |
+| `npm run test:l3` | Only `test/l3/` (`vitest run test/l3/`) |
 
-`test:l3` prints the time it took, for example `L3 took 12 s`. The budget is 120 s: on breach it prints `L3 took 121 s, budget 120 s` and exits 1. While `test/l3/` holds no test, `test:l3` passes with zero tests.
+`test:l3` prints the time it took, for example `L3 took 12 s`. The budget is 120 s: on breach it prints `L3 took 121 s, budget 120 s` and exits 1. When `test/l3/` has no `*.test.ts` file, it prints `test/l3/ has no test files` and exits 1 without starting vitest.
 
 ## The to-do sample and the network
 

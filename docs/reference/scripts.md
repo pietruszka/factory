@@ -59,7 +59,7 @@ Runs every test once with Vitest 5.1.2 on the `forks` pool, capped at two worker
 
 ## `test:l3`
 
-Runs `scripts/run-layer.ts`, which starts `vitest run test/l3/ --passWithNoTests`, prints `L3 took N s` and exits non-zero when vitest fails or the run is over its budget. The budget is 120 s, printed as `L3 took 121 s, budget 120 s` on breach. While `test/l3/` holds no test, the script passes with zero tests. See [Testing](/reference/testing#l3-tests-and-their-budget).
+Runs `scripts/run-layer.ts`, which starts `vitest run test/l3/`, prints `L3 took N s` and exits non-zero when vitest fails or the run is over its budget. The budget is 120 s, printed as `L3 took 121 s, budget 120 s` on breach. When `test/l3/` has no `*.test.ts` file, it prints `test/l3/ has no test files` and exits 1 without starting vitest. See [Testing](/reference/testing#l3-tests-and-their-budget).
 
 ## `docs:dev`
 
