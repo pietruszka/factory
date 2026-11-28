@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { isMainModule } from '../dev/run-as-main.js';
 import { FactoryError } from '../platform/errors.js';
 import { assertSupportedPlatform } from '../ports/platform.js';
 import { EXIT_CODES } from './exit-codes.js';
@@ -117,11 +118,8 @@ function readPackageVersion(): string {
   return pkg.version;
 }
 
-/** True when this file is the process entry point, also through the symlink `npm link` creates. */
-const isEntryPoint = (): boolean => {
-  const entry = process.argv[1];
-  return entry !== undefined && realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url));
-};
+/** True when this file is the process entry point, also through a symlink `npm link` creates. */
+const isEntryPoint = (): boolean => isMainModule(import.meta.url);
 
 export interface RunMainOptions extends Omit<RunCliOptions, 'packageVersion'> {
   isEntryPoint: () => boolean;

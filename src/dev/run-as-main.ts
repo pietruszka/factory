@@ -1,10 +1,13 @@
-import { resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+/** True when `moduleUrl` is the process entry point, also through a symlink `npm link` creates. */
+export function isMainModule(moduleUrl: string, argv1: string | undefined = process.argv[1]): boolean {
+  return argv1 !== undefined && realpathSync(argv1) === realpathSync(fileURLToPath(moduleUrl));
+}
 
 export function runAsMain(moduleUrl: string, run: () => void): void {
-  const modulePath = fileURLToPath(moduleUrl);
-  const invokedPath = process.argv[1] ? resolve(process.argv[1]) : '';
-  if (!invokedPath || pathToFileURL(invokedPath).href !== pathToFileURL(modulePath).href) {
+  if (!isMainModule(moduleUrl)) {
     return;
   }
 

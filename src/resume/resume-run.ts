@@ -5,7 +5,7 @@ import { formatUsd } from '../cost/format.js';
 import type { CostOptions } from '../cost/types.js';
 import { NON_RESUMABLE_RUN_STATUSES } from '../event-log/schema.js';
 import { stopRunProcesses } from '../kill/kill-run.js';
-import { FactoryError } from '../platform/errors.js';
+import { refused, type FactoryError } from '../platform/errors.js';
 import type { ProcessTable } from '../ports/process-table.js';
 import type { Spawner } from '../ports/spawner.js';
 import { writeProgress } from '../run-folder/progress.js';
@@ -59,16 +59,13 @@ const SHORT_NAMES: Readonly<Record<string, RunStatus>> = {
   review: 'reviewing',
 };
 
-const refuse = (code: string, message: string, where: string, next: string): FactoryError =>
-  new FactoryError({ code, message, where, next, exitCode: 2 });
-
 export const runNotFound = (repo: string, ticket: string): FactoryError =>
-  refuse(
-    'run_not_found',
-    `There is no running or stopped run for ${ticket} in ${repo}. Nothing was started.`,
-    ticket,
-    'Check the ticket and run the command from the checkout of the repo the run belongs to.',
-  );
+  refused({
+    code: 'run_not_found',
+    message: `There is no running or stopped run for ${ticket} in ${repo}. Nothing was started.`,
+    where: ticket,
+    next: 'Check the ticket and run the command from the checkout of the repo the run belongs to.',
+  });
 
 const phaseIndex = (phase: RunStatus): number => (PHASES as readonly RunStatus[]).indexOf(phase);
 
@@ -101,12 +98,12 @@ function findFrom(stages: readonly ResumeStage[], flat: readonly Flat[], from: s
 }
 
 function unknownFrom(from: string, stages: readonly ResumeStage[], flat: readonly Flat[]): FactoryError {
-  return refuse(
-    'step_unknown',
-    `There is no step "${from}" in this pipeline.`,
-    '--from',
-    `Pass one of the steps (${flat.map((entry) => entry.spec.stepId).join(', ')}) or a phase (${stages.map((stage) => stage.phase).join(', ')}).`,
-  );
+  return refused({
+    code: 'step_unknown',
+    message: `There is no step "${from}" in this pipeline.`,
+    where: '--from',
+    next: `Pass one of the steps (${flat.map((entry) => entry.spec.stepId).join(', ')}) or a phase (${stages.map((stage) => stage.phase).join(', ')}).`,
+  });
 }
 
 /** The cap after `--cap`, refusing a run whose spend already reaches it. Nothing is written here. */
@@ -117,12 +114,12 @@ function capAfter(options: ResumeRunOptions, runId: string): number | undefined 
   const raised = capIncrementUsd === undefined ? current : Math.round(((current ?? 0) + capIncrementUsd) * 1e6) / 1e6;
   const spent = spentUsdOf(reader, runId);
   if (raised !== undefined && spent >= raised) {
-    throw refuse(
-      'cap_reached',
-      `Run ${runId} has spent ${formatUsd(spent)} and its dollar cap is ${formatUsd(raised)}${capIncrementUsd === undefined ? '' : ` after adding ${formatUsd(capIncrementUsd)}`}, so it would stop at once. Nothing was started.`,
-      'cap_usd_effective',
-      `Raise the cap explicitly, for example: factory resume ${ticket} --cap +$${Math.ceil(spent - raised) + 1}.`,
-    );
+    throw refused({
+      code: 'cap_reached',
+      message: `Run ${runId} has spent ${formatUsd(spent)} and its dollar cap is ${formatUsd(raised)}${capIncrementUsd === undefined ? '' : ` after adding ${formatUsd(capIncrementUsd)}`}, so it would stop at once. Nothing was started.`,
+      where: 'cap_usd_effective',
+      next: `Raise the cap explicitly, for example: factory resume ${ticket} --cap +$${Math.ceil(spent - raised) + 1}.`,
+    });
   }
   return capIncrementUsd === undefined ? undefined : raised;
 }
@@ -130,14 +127,14 @@ function capAfter(options: ResumeRunOptions, runId: string): number | undefined 
 /** The HEAD of the existing worktree. Refuses a worktree that is gone: resume never creates one. */
 function worktreeHead(env: NodeJS.ProcessEnv, repo: string, ticket: string): { path: string; head: string } {
   const path = worktreePath(env, repo, ticket);
-  const head = existsSync(path) ? runGit(env, path, ['rev-parse', 'HEAD']) : undefined;
+  const head = existsSync(path) ? runGit(env, path, ['rev-parse', 'HEAD'], { profile: 'user' }) : undefined;
   if (!head?.ok || head.stdout === '') {
-    throw refuse(
-      'worktree_missing',
-      `The worktree ${path} of ${ticket} is missing or is not a git checkout, and resume does not create one.`,
-      path,
-      'Restore the worktree, or start a new run for the ticket.',
-    );
+    throw refused({
+      code: 'worktree_missing',
+      message: `The worktree ${path} of ${ticket} is missing or is not a git checkout, and resume does not create one.`,
+      where: path,
+      next: 'Restore the worktree, or start a new run for the ticket.',
+    });
   }
   return { path, head: head.stdout };
 }
@@ -186,12 +183,12 @@ export async function resumeRun(options: ResumeRunOptions): Promise<ResumeRunOut
   if (run === undefined) throw runNotFound(repo, ticket);
   const { runId, status: previousStatus } = run;
   if ((NON_RESUMABLE_RUN_STATUSES as readonly RunStatus[]).includes(previousStatus)) {
-    throw refuse(
-      'run_not_resumable',
-      `Run ${runId} of ${ticket} is ${previousStatus}, so it cannot be resumed. Nothing was started.`,
-      `runs.status (${runId})`,
-      `A ${previousStatus} run is final. Start a new run for the ticket instead.`,
-    );
+    throw refused({
+      code: 'run_not_resumable',
+      message: `Run ${runId} of ${ticket} is ${previousStatus}, so it cannot be resumed. Nothing was started.`,
+      where: `runs.status (${runId})`,
+      next: `A ${previousStatus} run is final. Start a new run for the ticket instead.`,
+    });
   }
 
   const flat: Flat[] = stages.flatMap((stage) => stage.steps.map((spec) => ({ stage, spec })));
@@ -205,12 +202,12 @@ export async function resumeRun(options: ResumeRunOptions): Promise<ResumeRunOut
     left ?? (flat.find((entry) => pending(entry.spec.stepId) || redo.includes(entry.spec.stepId))?.stage ?? stages[0])?.phase;
   if (startPhase === undefined) throw new Error('resumeRun needs at least one stage.');
   if (first !== undefined && phaseIndex(first.phase) < phaseIndex(startPhase)) {
-    throw refuse(
-      'from_behind',
-      `${from} belongs to ${first.phase}, but run ${runId} is already past it (${startPhase}). A run only goes forward.`,
-      '--from',
-      `Pass a step of ${startPhase} or a later phase.`,
-    );
+    throw refused({
+      code: 'from_behind',
+      message: `${from} belongs to ${first.phase}, but run ${runId} is already past it (${startPhase}). A run only goes forward.`,
+      where: '--from',
+      next: `Pass a step of ${startPhase} or a later phase.`,
+    });
   }
   if (phaseIndex(startPhase) < phaseIndex('building')) assertApproved(context, runId);
   const newCap = capAfter(options, runId);

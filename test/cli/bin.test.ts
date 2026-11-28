@@ -67,4 +67,18 @@ describe('installable factory command', () => {
 
     expect(firstLine).toBe('#!/usr/bin/env node');
   });
+
+  test('a symlink to the built entry still prints the package.json version and exits 0', () => {
+    expect(buildResult.status, String(buildResult.stderr)).toBe(0);
+    const link = join(outDir, 'factory-bin');
+    symlinkSync(builtEntry(), link);
+
+    const result = spawnSync(process.execPath, [link, '--version'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: home },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toContain(String(pkg.version));
+  });
 });

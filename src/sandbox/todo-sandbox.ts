@@ -1,10 +1,10 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { FactoryError } from '../platform/errors.js';
+import { refused } from '../platform/errors.js';
 import { assertNotProtectedFolder, resolveFactoryPaths } from '../platform/paths.js';
+import { runGit } from '../worktree/git.js';
 import { unzipSafely } from './unzip.js';
 
 /** The annotated tags inside the sample's git repo, one starter state each. */
@@ -34,31 +34,21 @@ function fixtureZipPath(): string {
     if (existsSync(candidate)) return candidate;
     dir = dirname(dir);
   }
-  throw new FactoryError({
+  throw refused({
     code: 'sample_fixture_missing',
     message: `The sample fixture ${ZIP_RELATIVE} was not found next to this checkout.`,
     where: ZIP_RELATIVE,
     next: 'Run from a full factory checkout. `npm run sandbox:pack` rebuilds the zip.',
-    exitCode: 2,
   });
 }
 
 /** Runs git in the unpacked repo with no user or system config and no hooks. */
 function git(cwd: string, env: NodeJS.ProcessEnv, args: readonly string[]): void {
-  execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'core.autocrlf=false', ...args], {
-    cwd,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: {
-      PATH: env.PATH ?? process.env.PATH ?? '',
-      GIT_CONFIG_GLOBAL: '/dev/null',
-      GIT_CONFIG_NOSYSTEM: '1',
-      GIT_TERMINAL_PROMPT: '0',
-    },
-  });
+  const result = runGit(env, cwd, ['-c', 'core.autocrlf=false', ...args], { profile: 'isolated' });
+  if (!result.ok) {
+    throw new Error(result.stderr || `git ${args.join(' ')} failed`);
+  }
 }
-
-const failure = (code: string, message: string, where: string, next: string): FactoryError =>
-  new FactoryError({ code, message, where, next, exitCode: 2 });
 
 /** The folders the unpack writes through must be real folders: a symlink could point outside the sandbox root. */
 function assertNoSymlink(path: string): void {
@@ -69,12 +59,12 @@ function assertNoSymlink(path: string): void {
     return; // not there yet
   }
   if (isLink) {
-    throw failure(
-      'sandbox_symlink',
-      `${path} is a symbolic link. The sandbox does not follow links out of the sandbox root.`,
-      path,
-      'Remove the link, or point FACTORY_HOME at a folder whose cache and sandbox folders are real folders.',
-    );
+    throw refused({
+      code: 'sandbox_symlink',
+      message: `${path} is a symbolic link. The sandbox does not follow links out of the sandbox root.`,
+      where: path,
+      next: 'Remove the link, or point FACTORY_HOME at a folder whose cache and sandbox folders are real folders.',
+    });
   }
 }
 
@@ -88,7 +78,12 @@ function assertNoSymlink(path: string): void {
 export function unpackTodoSandbox(options: UnpackTodoSandboxOptions): TodoSandbox {
   const { env, sample } = options;
   if (!SAMPLE_TAGS.includes(sample)) {
-    throw failure('sample_unknown', `Unknown sample "${sample}".`, `--sample ${sample}`, `Use one of: ${SAMPLE_TAGS.join(', ')}.`);
+    throw refused({
+      code: 'sample_unknown',
+      message: `Unknown sample "${sample}".`,
+      where: `--sample ${sample}`,
+      next: `Use one of: ${SAMPLE_TAGS.join(', ')}.`,
+    });
   }
   const { cacheRoot, sandboxRoot } = resolveFactoryPaths(env);
   const path = join(sandboxRoot, SANDBOX_DIR);

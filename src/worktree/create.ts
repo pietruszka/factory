@@ -6,7 +6,7 @@ import type { WORKTREE_MODES } from '../config/schema.js';
 import type { EventLog, EventLogReadOnly } from '../event-log/open.js';
 import type { Deps } from '../platform/deps.js';
 import { assertNotProtectedFolder } from '../platform/paths.js';
-import { refuse } from './errors.js';
+import { refused } from '../platform/errors.js';
 import { runGit } from './git.js';
 import { worktreePath } from './path.js';
 import { assertCanStart } from './start.js';
@@ -42,34 +42,36 @@ export interface CreatedWorktree {
 const COMMIT_ID = /^[0-9a-f]{4,64}$/i;
 
 function createFailed(detail: string, repoPath: string): Error {
-  return refuse(
-    'worktree_create_failed',
-    `git could not create the worktree: ${detail}`,
-    repoPath,
-    'Check that the base commit is reachable from a branch or tag of the work repo and that git is installed, then try again.',
-  );
+  return refused({
+    code: 'worktree_create_failed',
+    message: `git could not create the worktree: ${detail}`,
+    where: repoPath,
+    next: 'Check that the base commit is reachable from a branch or tag of the work repo and that git is installed, then try again.',
+  });
 }
 
 /** The full id of `baseCommit` in the work repo. Refuses a missing `.git` or an unknown commit. */
 function resolveBaseCommit(env: NodeJS.ProcessEnv, repoPath: string, baseCommit: string): string {
   if (!existsSync(join(repoPath, '.git'))) {
-    throw refuse(
-      'worktree_invalid',
-      `${repoPath} is not a git checkout: it has no .git.`,
-      repoPath,
-      'Pass the path of the work-repo checkout.',
-    );
+    throw refused({
+      code: 'worktree_invalid',
+      message: `${repoPath} is not a git checkout: it has no .git.`,
+      where: repoPath,
+      next: 'Pass the path of the work-repo checkout.',
+    });
   }
   const resolved = COMMIT_ID.test(baseCommit)
-    ? runGit(env, repoPath, ['rev-parse', '--verify', '--quiet', `${baseCommit}^{commit}`])
+    ? runGit(env, repoPath, ['rev-parse', '--verify', '--quiet', `${baseCommit}^{commit}`], {
+        profile: 'user',
+      })
     : undefined;
   if (!resolved?.ok || resolved.stdout === '') {
-    throw refuse(
-      'worktree_invalid',
-      `The base commit "${baseCommit}" does not exist in ${repoPath}.`,
-      'baseCommit',
-      'Pass the full id of a commit that exists in the work repo.',
-    );
+    throw refused({
+      code: 'worktree_invalid',
+      message: `The base commit "${baseCommit}" does not exist in ${repoPath}.`,
+      where: 'baseCommit',
+      next: 'Pass the full id of a commit that exists in the work repo.',
+    });
   }
   return resolved.stdout;
 }
@@ -93,7 +95,7 @@ function addWorktree(env: NodeJS.ProcessEnv, mode: WorktreeMode, repoPath: strin
           { cwd: path, args: ['checkout', '--quiet', '--detach', commit] },
         ];
   for (const step of steps) {
-    const result = runGit(env, step.cwd, step.args);
+    const result = runGit(env, step.cwd, step.args, { profile: 'user' });
     if (!result.ok) {
       throw createFailed(result.stderr, repoPath);
     }
@@ -103,7 +105,7 @@ function addWorktree(env: NodeJS.ProcessEnv, mode: WorktreeMode, repoPath: strin
 /** Deletes a half-made destination, and any linked-worktree metadata for it. */
 function undo(env: NodeJS.ProcessEnv, repoPath: string, path: string): void {
   rmSync(path, { recursive: true, force: true });
-  runGit(env, repoPath, ['worktree', 'prune']);
+  runGit(env, repoPath, ['worktree', 'prune'], { profile: 'user' });
 }
 
 /**
@@ -117,18 +119,23 @@ export function createWorktree(options: CreateWorktreeOptions): CreatedWorktree 
   const computed = worktreePath(env, options.repo, options.ticket);
   const path = options.path ?? computed;
   if (!isAbsolute(path)) {
-    throw refuse('worktree_invalid', `The worktree path "${path}" is not absolute.`, 'path', 'Pass an absolute path.');
+    throw refused({
+      code: 'worktree_invalid',
+      message: `The worktree path "${path}" is not absolute.`,
+      where: 'path',
+      next: 'Pass an absolute path.',
+    });
   }
   assertNotProtectedFolder(path, env);
 
   const baseCommit = resolveBaseCommit(env, repoPath, options.baseCommit);
   if (existsSync(path)) {
-    throw refuse(
-      'worktree_invalid',
-      `The worktree destination ${path} already exists.`,
-      path,
-      'Remove it with removeWorktree, or pick another ticket. Existing content is never overwritten.',
-    );
+    throw refused({
+      code: 'worktree_invalid',
+      message: `The worktree destination ${path} already exists.`,
+      where: path,
+      next: 'Remove it with removeWorktree, or pick another ticket. Existing content is never overwritten.',
+    });
   }
 
   const allowedPaths = [...(options.allowedPaths ?? [])];

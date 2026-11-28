@@ -2,16 +2,16 @@ import { join } from 'node:path';
 
 import { resolveFactoryPaths } from '../platform/paths.js';
 import { isSlug } from '../run-folder/path.js';
-import { refuse } from './errors.js';
+import { refused } from '../platform/errors.js';
 
 function assertWorktreeSlug(kind: string, value: string): void {
   if (!isSlug(value)) {
-    throw refuse(
-      'worktree_invalid',
-      `The ${kind} "${value}" is not a valid name. Use letters, digits, ".", "_" or "-" only, and not "." or "..".`,
-      kind,
-      'Pass a slug, not a path: for example example-frontend as the repo and FE-123 as the ticket.',
-    );
+    throw refused({
+      code: 'worktree_invalid',
+      message: `The ${kind} "${value}" is not a valid name. Use letters, digits, ".", "_" or "-" only, and not "." or "..".`,
+      where: kind,
+      next: 'Pass a slug, not a path: for example example-frontend as the repo and FE-123 as the ticket.',
+    });
   }
 }
 

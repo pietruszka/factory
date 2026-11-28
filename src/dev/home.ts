@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+import { resolveComparablePath, resolveUserHome } from '../platform/path-helpers.js';
 import { assertNotPrivatePath, isWithinOrSamePath } from './private-guard.js';
-import { resolveComparablePath, resolveUserHome } from './path-helpers.js';
 
 export const DEV_HOME_MARKER = '.factory-dev-home';
 

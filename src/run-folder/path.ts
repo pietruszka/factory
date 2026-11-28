@@ -1,13 +1,13 @@
 import { join } from 'node:path';
 
-import { FactoryError } from '../platform/errors.js';
+import { refused, type FactoryError } from '../platform/errors.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
 
 const SLUG = /^[A-Za-z0-9._-]+$/;
 
 /** Every refusal of this module: wrong use, exit code 2. */
 export function runFolderInvalid(message: string, where: string, next: string): FactoryError {
-  return new FactoryError({ code: 'run_folder_invalid', message, where, next, exitCode: 2 });
+  return refused({ code: 'run_folder_invalid', message, where, next });
 }
 
 /** Whether `value` is a single slug segment: letters, digits, ".", "_" or "-", and not "." or "..". */

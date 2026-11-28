@@ -1,7 +1,7 @@
 import type { EventLogReadOnly } from '../event-log/open.js';
 import { readPayload } from '../event-log/payloads.js';
 import { NON_RESUMABLE_RUN_STATUSES } from '../event-log/schema.js';
-import { refuse } from './errors.js';
+import { refused } from '../platform/errors.js';
 import { allowedPathsOverlap } from './overlap.js';
 
 /** At most this many runs may be active at once (ADR-007). */
@@ -49,21 +49,21 @@ export function assertCanStart(options: AssertCanStartOptions): void {
   const active = activeRuns(options.reader, options.runId ?? '');
 
   if (active.length >= MAX_ACTIVE_RUNS) {
-    throw refuse(
-      'worktree_busy',
-      `${active.length} runs are already active (${active.map((run) => run.runId).join(', ')}). At most ${MAX_ACTIVE_RUNS} may run at once.`,
-      'runs',
-      'Wait for an active run to finish, or stop one, then start the run again. Runs are not queued.',
-    );
+    throw refused({
+      code: 'worktree_busy',
+      message: `${active.length} runs are already active (${active.map((run) => run.runId).join(', ')}). At most ${MAX_ACTIVE_RUNS} may run at once.`,
+      where: 'runs',
+      next: 'Wait for an active run to finish, or stop one, then start the run again. Runs are not queued.',
+    });
   }
 
   const clash = active.find((run) => allowedPathsOverlap(run.allowedPaths, options.allowedPaths));
   if (clash) {
-    throw refuse(
-      'worktree_overlap',
-      `The allowed paths of this run may overlap those of the active run ${clash.runId}. Two runs may be active at once only when their paths are disjoint.`,
-      clash.runId,
-      `Narrow the allowed paths so they are disjoint from ${clash.runId}, or wait for it to finish. A run without allowed paths overlaps everything.`,
-    );
+    throw refused({
+      code: 'worktree_overlap',
+      message: `The allowed paths of this run may overlap those of the active run ${clash.runId}. Two runs may be active at once only when their paths are disjoint.`,
+      where: clash.runId,
+      next: `Narrow the allowed paths so they are disjoint from ${clash.runId}, or wait for it to finish. A run without allowed paths overlaps everything.`,
+    });
   }
 }
