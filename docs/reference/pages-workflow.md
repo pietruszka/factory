@@ -97,4 +97,4 @@ A pull request uses the group `pages-pr-<number>` and cancels an older run of th
 - It does not set the Pages source. That is the manual step above.
 - It does not deploy pull request previews.
 - It does not publish any directory other than `docs/.vitepress/dist`.
-- It does not run tests. There are no tests in the repository.
+- It does not run tests. The suite is under `test/` and runs in CI.

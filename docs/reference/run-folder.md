@@ -5,7 +5,7 @@ description: The per-run folder under the factory home - location, slug rules, l
 
 # Run folder (FAC-16)
 
-Each run gets one folder for its plan, evidence, saved prompts and report. The code is `src/run-folder/`. It is a library: there is no `factory` command for it yet. The run state machine (a later ticket) calls it.
+Each run gets one folder for its plan, evidence, saved prompts and report. The code is `src/run-folder/`. It is a library: there is no `factory` command for it yet. The run state machine in `src/run-state/` calls it.
 
 ## Location
 
@@ -40,7 +40,7 @@ The writers add these files:
 | `writeEvidenceDiff({ env, repo, ticket, diff })` | `evidence/diff.patch` |
 | `writeReport({ env, log, runId, worktreePath })` | `report.md` |
 
-`ticket.json`, `plan.approved`, `decisions.md` and `review.md` are written by later tickets. The report only refers to them. `plan.md` is written by a later ticket too, but `factory resume` already adds a progress section to it (see below). The writers need the folder to exist; call `createRunFolder` first.
+`ticket.json`, `decisions.md` and `review.md` are not written by product code yet. The report only refers to them. `plan.md` is written by the stub pipeline, and `factory resume` adds a progress section to it (see below). `plan.approved` is written by `factory dev-approve`. The writers need the folder to exist; call `createRunFolder` first.
 
 The run folder holds no checkout. No writer copies a worktree, a `.git` directory or a source tree. `createRunFolder` refuses a folder that already contains `.git`.
 

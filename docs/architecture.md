@@ -19,6 +19,7 @@ The repository holds the TypeScript `factory` CLI (M1 foundation), its tests, ag
 ├── .github/
 │   ├── pull_request_template.md  # AC table, shared-helpers checkbox, gates
 │   └── workflows/
+│       ├── ci.yml                # typecheck, lint, test, test:l3, build
 │       ├── docs.yml              # build, and deploy to GitHub Pages
 │       └── pr-title.yml          # PR titles must match type(FAC-N): summary
 ├── AGENTS.md                     # always-on instructions for coding agents on this repo
@@ -38,6 +39,7 @@ The repository holds the TypeScript `factory` CLI (M1 foundation), its tests, ag
 │   ├── ports/                    # outside-system seams + recording fakes
 │   ├── preflight/                # config drift and toolchain checks
 │   ├── probe/                    # CLI probe harness
+│   ├── redaction/                # secret redaction
 │   ├── retention/                # factory clean
 │   ├── run-folder/ · run-state/  # run artefacts and state machine
 │   ├── sandbox/                  # sample to-do unpack
