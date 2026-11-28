@@ -76,6 +76,7 @@ describe('clock and randomness lint rule', () => {
     expect(depsErrors(await lintErrors(CLOCK_SNIPPETS[0]![1], 'test/x.test.ts'))).toEqual([]);
   });
 
+  // Type-aware eslint over the whole tree is slower than the 5s default (CI ~9s).
   test('npm run lint passes on the repo (zero errors over src/, test/ and scripts/)', () => {
     // Fresh process: lintText against real src paths poisons the in-process type-aware project service.
     const result = spawnSync(
@@ -85,7 +86,7 @@ describe('clock and randomness lint rule', () => {
     );
 
     expect(result.status, result.stderr || result.stdout).toBe(0);
-  });
+  }, 30_000);
 
   test('an unused variable under test/ is reported', async () => {
     const errors = await lintErrors('const unused = 1;\nexport const x = 1;\n', 'test/x.test.ts');
