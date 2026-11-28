@@ -25,11 +25,13 @@ export function createRecordingTicketSource(options: {
   const calls: TicketSourceCall[] = [];
   return {
     calls,
-    fetchTicket: async (key) => {
+    fetchTicket: (key) => {
       calls.push({ method: 'fetchTicket', key });
       const ticket = options.tickets[key];
-      if (!ticket) throw new Error(`No scripted ticket for ${key}.`);
-      return ticket;
+      if (!ticket) {
+        return Promise.reject(new Error(`No scripted ticket for ${key}.`));
+      }
+      return Promise.resolve(ticket);
     },
   };
 }

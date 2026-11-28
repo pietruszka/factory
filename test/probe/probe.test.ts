@@ -1060,7 +1060,13 @@ describe('opencode 2.x probe runner', () => {
     );
     const cwd = join(userHome, 'sandbox');
     const spec = openCodeSpec(cwd);
-    const outcome = runProbeCli({ ...spec, args: [...spec.args.slice(0, -1), '--auto', spec.args[spec.args.length - 1]] }, {
+    const args = spec.args.slice(0, -1);
+    const last = spec.args.at(-1);
+    if (last === undefined) {
+      throw new Error('opencode probe args are empty');
+    }
+    args.push('--auto', last);
+    const outcome = runProbeCli({ ...spec, args }, {
       ...env,
       MARKER_DIR: markerDir,
     });

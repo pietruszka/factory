@@ -57,22 +57,22 @@ export function createFakeSpawner(options: { reply?: (request: SpawnRequest) => 
     requests,
     kills,
     terms,
-    spawn: async (request) => {
+    spawn: (request) => {
       requests.push(request);
       const reply = options.reply?.(request) ?? {};
-      return {
+      return Promise.resolve({
         pid: nextPid++,
         exit: Promise.resolve({ code: reply.code ?? 0, signal: null }),
         output: Promise.resolve({ stdout: reply.stdout ?? '', stderr: reply.stderr ?? '' }),
-      };
+      });
     },
-    killTree: async (pid, command) => {
+    killTree: (pid, command) => {
       kills.push({ pid, command });
-      return 'killed';
+      return Promise.resolve('killed' as const);
     },
-    termTree: async (pid, command) => {
+    termTree: (pid, command) => {
       terms.push({ pid, command });
-      return 'killed';
+      return Promise.resolve('killed' as const);
     },
   };
 }

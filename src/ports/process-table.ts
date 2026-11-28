@@ -26,7 +26,8 @@ export function createFakeProcessTable(): FakeProcessTable {
       records.set(entry.pid, entry);
     },
     list: () => [...records.values()],
-    stillMatches: async (pid, command) => (recycled.get(pid) ?? records.get(pid)?.command) === command,
+    stillMatches: (pid, command) =>
+      Promise.resolve((recycled.get(pid) ?? records.get(pid)?.command) === command),
     plantRecycledPid: (pid, otherCommand) => {
       recycled.set(pid, otherCommand);
     },

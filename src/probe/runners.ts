@@ -45,7 +45,7 @@ export function isMacPrivacyProtectedPath(path: string, userHome: string | undef
     return false;
   }
   const first = rel.split(/[\\/]/)[0];
-  return MAC_PRIVACY_PROTECTED_DIRS.includes(first);
+  return first !== undefined && MAC_PRIVACY_PROTECTED_DIRS.includes(first);
 }
 
 function sleepMs(ms: number): void {

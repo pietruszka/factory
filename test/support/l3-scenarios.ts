@@ -393,7 +393,7 @@ export const runRetentionScenario = async (): Promise<RetentionScenarioResult> =
   const fx = retentionFixture();
   const old = fx.seed({ runId: 'run-a', ticket: 'FE-201', worktree: false, endedAgoMs: 31 * DAY });
   const recent = fx.seed({ runId: 'run-b', ticket: 'FE-202', worktree: false, endedAgoMs: DAY });
-  const keptBefore = Object.fromEntries(KEPT_FILES.map((name) => [name, contentsUnder(old.runFolder)[name]]));
+  const keptBefore = Object.fromEntries(KEPT_FILES.map((name) => [name, contentsUnder(old.runFolder)[name] ?? '']));
   const recentBefore = contentsUnder(recent.runFolder);
 
   const result = await fx.clean();

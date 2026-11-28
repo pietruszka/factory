@@ -55,23 +55,27 @@ export function createRecordingCodeHost(options: {
     allow: (method) => {
       allowed.add(method);
     },
-    fetchPullRequest: async (repo, number) => {
+    fetchPullRequest: (repo, number) => {
       calls.push({ method: 'fetchPullRequest', args: { repo, number } });
       const pullRequest = options.pullRequests?.[`${repo}#${number}`];
-      if (!pullRequest) throw new Error(`No scripted pull request for ${repo}#${number}.`);
-      return pullRequest;
+      if (!pullRequest) {
+        return Promise.reject(new Error(`No scripted pull request for ${repo}#${number}.`));
+      }
+      return Promise.resolve(pullRequest);
     },
-    push: async (input) => {
-      guardWrite('push', input);
-    },
-    openDraftPr: async (input) => {
-      guardWrite('openDraftPr', input);
-      return {
-        number: 1,
-        title: input.title,
-        url: `https://example.invalid/${input.repo}/pull/1`,
-        headBranch: input.branch,
-      };
-    },
+    push: (input) =>
+      Promise.resolve().then(() => {
+        guardWrite('push', input);
+      }),
+    openDraftPr: (input) =>
+      Promise.resolve().then(() => {
+        guardWrite('openDraftPr', input);
+        return {
+          number: 1,
+          title: input.title,
+          url: `https://example.invalid/${input.repo}/pull/1`,
+          headBranch: input.branch,
+        };
+      }),
   };
 }

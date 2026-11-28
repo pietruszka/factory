@@ -27,10 +27,21 @@ export default tseslint.config(
   { ignores: ['dist/**'] },
   {
     files: ['src/**/*.ts'],
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        // Virtual paths used by test/lint/*.test.ts (lintText) are not in tsconfig.
+        projectService: { allowDefaultProject: ['src/core/*.ts', 'src/lint-fixtures/*.ts'] },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       'no-restricted-syntax': ['error', ...clockSelectors, ...pathSelectors],
     },
+  },
+  {
+    files: ['test/**/*.ts', 'scripts/**/*.ts'],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
   },
   {
     // Only deps.ts owns the clock and randomness; the home-path ban still applies there.

@@ -35,16 +35,17 @@ export function createFakePlatform(
     keychainReads,
     clipboardWrites,
     keychain: {
-      get: async (item) => {
+      get: (item) => {
         keychainReads.push(item);
-        return options.keychain?.[item];
+        return Promise.resolve(options.keychain?.[item]);
       },
     },
     clipboard: {
-      read: async () => clipboard,
-      write: async (text) => {
+      read: () => Promise.resolve(clipboard),
+      write: (text) => {
         clipboardWrites.push(text);
         clipboard = text;
+        return Promise.resolve();
       },
     },
   };
@@ -129,15 +130,16 @@ export function createLinuxPlatform(
   return {
     os: 'linux',
     keychain: {
-      get: async (item) => {
-        throw new FactoryError({
-          code: 'secret_missing',
-          message: `The keychain item "${item}" cannot be read on Linux.`,
-          where: `keychain item ${item}`,
-          next: `use an env: secret ref instead of keychain: ${item}`,
-          exitCode: 2,
-        });
-      },
+      get: (item) =>
+        Promise.reject(
+          new FactoryError({
+            code: 'secret_missing',
+            message: `The keychain item "${item}" cannot be read on Linux.`,
+            where: `keychain item ${item}`,
+            next: `use an env: secret ref instead of keychain: ${item}`,
+            exitCode: 2,
+          }),
+        ),
     },
     clipboard: {
       read: async () => {

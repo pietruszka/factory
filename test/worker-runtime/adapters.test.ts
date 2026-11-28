@@ -27,7 +27,7 @@ interface RuntimeCase {
   adapterSource: string;
 }
 
-const RUNTIMES: RuntimeCase[] = [
+const RUNTIMES = [
   {
     name: 'cursor-agent',
     create: createCursorAgentRuntime,
@@ -35,7 +35,7 @@ const RUNTIMES: RuntimeCase[] = [
     adapterSource: 'src/adapters/cursor-agent.ts',
   },
   { name: 'opencode', create: createOpenCodeRuntime, commands: /^opencode$/, adapterSource: 'src/adapters/opencode.ts' },
-];
+] as const satisfies readonly RuntimeCase[];
 
 function setup() {
   const sandbox = runtimeSandbox();

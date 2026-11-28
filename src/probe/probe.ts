@@ -90,8 +90,8 @@ function parseJsonObjects(output: string): unknown[] {
 function findFirst(
   value: unknown,
   keyPattern: RegExp,
-  pick: (entry: unknown) => unknown | undefined,
-): unknown | undefined {
+  pick: (entry: unknown) => unknown,
+): unknown {
   if (!value || typeof value !== 'object') {
     return undefined;
   }
@@ -121,7 +121,7 @@ function findFirst(
   return undefined;
 }
 
-function findUsage(value: unknown): unknown | undefined {
+function findUsage(value: unknown): unknown {
   return findFirst(value, /^(usage|tokens)$/i, (entry) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       return undefined;
@@ -222,8 +222,8 @@ function getAgentEmail(
     maxBuffer: TEN_MB,
   });
 
-  const spawnError = status.error as NodeJS.ErrnoException | undefined;
-  if (spawnError?.code === 'ENOENT') {
+  const spawnError = status.error;
+  if (spawnError && 'code' in spawnError && spawnError.code === 'ENOENT') {
     return { error: AGENT_NOT_FOUND_ERROR };
   }
 

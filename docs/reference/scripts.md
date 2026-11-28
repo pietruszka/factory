@@ -12,7 +12,7 @@ description: The only npm scripts in the factory repository.
 | `typecheck` | `tsc --noEmit` | Strict TypeScript check of `src/`, `test/` and `scripts/` |
 | `build` | `tsc -p tsconfig.build.json` | Compiles `src/` to `dist/` (git-ignored); `dist/src/cli/main.js` is the `factory` bin |
 | `build:watch` | `npm run build -- --watch` | Same as `build`, leaves `tsc` running and recompiles when `src/` changes |
-| `lint` | `eslint src` | ESLint over `src/`: clock and randomness ban (P-14), no hard-coded home paths (NFR-33) |
+| `lint` | `eslint src test scripts` | ESLint over `src/`, `test/` and `scripts/`: type-aware rules on `src/` only; clock and randomness ban (P-14) and no hard-coded home paths (NFR-33) on `src/` |
 | `test` | `vitest run` | All tests |
 | `test:l3` | `tsx scripts/run-layer.ts` | Only the `test/l3/` folder, with the time printed and a 120 s budget |
 | `test:sample-gates` | `tsx scripts/sample-gates.ts` | Opt-in, needs network: installs the to-do sample in a temp folder and runs its gates. Not part of `test` or `test:l3`. See [Sandbox](/reference/sandbox) |
@@ -52,7 +52,7 @@ Runs `npm run build -- --watch`: the same `tsc` command as `build`, with TypeScr
 
 ## `lint`
 
-Runs ESLint with `eslint.config.js` over `src/`. It uses the `recommended` rules of ESLint and typescript-eslint, plus two project rules: outside `src/platform/deps.ts`, clock and randomness calls are errors ("use Deps (P-14)"), and string literals that hold a user-home path are errors outside `src/platform/paths.ts`. Formatting is not checked. Details are in [VitePress config](/reference/configuration#factory-paths).
+Runs ESLint with `eslint.config.js` over `src/`, `test/` and `scripts/`. On `src/` it uses typescript-eslint `recommendedTypeChecked` (type-aware) plus two project rules: outside `src/platform/deps.ts`, clock and randomness calls are errors ("use Deps (P-14)"), and string literals that hold a user-home path are errors outside `src/platform/paths.ts`. On `test/` and `scripts/` it uses non-type-aware `recommended` only; the Deps and home-path bans do not apply there. Formatting is not checked. Details are in [VitePress config](/reference/configuration#factory-paths).
 
 ## `test`
 
