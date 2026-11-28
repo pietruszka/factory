@@ -1,12 +1,12 @@
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
 import type { z } from 'zod';
 
-import { FactoryError } from '../platform/errors.js';
+import { FactoryError, refused } from '../platform/errors.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
+import { runGit } from '../worktree/git.js';
 import { normaliseOrigin, samePath } from './origin.js';
 import {
   GlobalFileSchema,
@@ -171,16 +171,8 @@ function readRepoFiles(reposDir: string): RepoCandidate[] {
 
 /** The `origin` remote URL of the git repo at `repoPath`, or undefined when there is none. */
 function readGitOrigin(repoPath: string, env: NodeJS.ProcessEnv): string | undefined {
-  const result = spawnSync('git', ['-C', repoPath, 'remote', 'get-url', 'origin'], {
-    encoding: 'utf8',
-    env: { PATH: env.PATH ?? process.env.PATH ?? '', HOME: env.HOME ?? '', GIT_CONFIG_NOSYSTEM: '1' },
-  });
-  const url = result.status === 0 ? result.stdout.trim() : '';
-  return url === '' ? undefined : url;
-}
-
-function refuseRepoMatch(code: string, message: string, where: string, next: string): FactoryError {
-  return new FactoryError({ code, message, where, next, exitCode: 2 });
+  const result = runGit(env, repoPath, ['remote', 'get-url', 'origin'], { profile: 'isolated' });
+  return result.ok && result.stdout !== '' ? result.stdout : undefined;
 }
 
 /** Origin match wins over path match. More than one match in the winning group is refused. */
@@ -204,19 +196,19 @@ function chooseRepoFile(
     return only;
   }
   if (only) {
-    throw refuseRepoMatch(
-      'repo_config_ambiguous',
-      `More than one repo config matches ${repoPath}: ${matches.map(({ parsed }) => parsed.file).join(', ')}.`,
-      reposDir,
-      'Keep one file for this repo, or change match.origin or match.path so only one file matches.',
-    );
+    throw refused({
+      code: 'repo_config_ambiguous',
+      message: `More than one repo config matches ${repoPath}: ${matches.map(({ parsed }) => parsed.file).join(', ')}.`,
+      where: reposDir,
+      next: 'Keep one file for this repo, or change match.origin or match.path so only one file matches.',
+    });
   }
-  throw refuseRepoMatch(
-    'repo_config_missing',
-    `No repo config matches ${repoPath}.`,
-    reposDir,
-    `Create ${join(reposDir, `${basename(repoPath)}.yaml`)} with match.origin (the git origin URL) or match.path (the absolute path of the repo), plus the required keys.`,
-  );
+  throw refused({
+    code: 'repo_config_missing',
+    message: `No repo config matches ${repoPath}.`,
+    where: reposDir,
+    next: `Create ${join(reposDir, `${basename(repoPath)}.yaml`)} with match.origin (the git origin URL) or match.path (the absolute path of the repo), plus the required keys.`,
+  });
 }
 
 /** Keys sorted recursively, no insignificant whitespace. The hash input, so key order never matters. */

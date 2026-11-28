@@ -625,6 +625,29 @@ describe('loadConfig repo matching', () => {
     expect(loaded.files.repo).toBe(box.repoFile());
   });
 
+  test('a global url.insteadOf rewrite does not change the origin loadConfig reads', () => {
+    const box = sandbox();
+    box.writeGlobal('version: 1\n');
+    box.writeRepo(repoText());
+    writeFileSync(
+      join(box.env.HOME!, '.gitconfig'),
+      '[url "https://evil.example/"]\n\tinsteadOf = https://github.com/\n',
+      'utf8',
+    );
+    const gitEnv = {
+      PATH: process.env.PATH,
+      HOME: box.env.HOME,
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_CONFIG_GLOBAL: '/dev/null',
+    };
+    execFileSync('git', ['init', '-q'], { cwd: box.repoPath, env: gitEnv });
+    execFileSync('git', ['remote', 'add', 'origin', ORIGIN], { cwd: box.repoPath, env: gitEnv });
+
+    const loaded = loadConfig({ env: box.env, repoPath: box.repoPath });
+
+    expect(loaded.files.repo).toBe(box.repoFile());
+  });
+
   test('a git repo with no origin and no injected originUrl is a missing-file refusal', () => {
     const box = sandbox();
     box.writeGlobal('version: 1\n');

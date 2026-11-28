@@ -1,23 +1,10 @@
 import { basename } from 'node:path';
 
+import { redactText } from '../redaction/redact.js';
+
 const MIN_REDACTION_LENGTH = 6;
 const SECRET_NAME_PATTERN = /(KEY|TOKEN|SECRET|PASSWORD|PASS|AUTH|CREDENTIAL)/i;
 const GIT_CONFIG_KEY_INDEX_PATTERN = /_KEY_\d+$/i;
-
-function escapeForRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function redactText(value: string, secrets: readonly string[]): string {
-  let redacted = value;
-  for (const secret of secrets) {
-    if (!secret) {
-      continue;
-    }
-    redacted = redacted.replace(new RegExp(escapeForRegExp(secret), 'g'), '[REDACTED]');
-  }
-  return redacted;
-}
 
 function redactRecursively(value: unknown, secrets: readonly string[]): unknown {
   if (typeof value === 'string') {

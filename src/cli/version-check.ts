@@ -1,8 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-import { FactoryError } from '../platform/errors.js';
-import { EXIT_CODES } from './exit-codes.js';
+import { refused } from '../platform/errors.js';
 
 /** Oldest supported versions (D-38 for Node; git is the plan's proposed minimum). */
 const MIN_NODE = '22.13';
@@ -35,9 +34,6 @@ function atLeast(version: Version | null, minimum: string): boolean {
   return version.major !== min.major ? version.major > min.major : version.minor >= min.minor;
 }
 
-const refuse = (code: string, message: string, where: string, next: string): FactoryError =>
-  new FactoryError({ code, message, where, next, exitCode: EXIT_CODES.refused });
-
 /**
  * Refuses an old Node, a missing git or an old git by throwing a `FactoryError` with exit code 2.
  * Pass `checkGit: false` for commands that must answer at once.
@@ -48,12 +44,12 @@ export async function checkEnvironment(
 ): Promise<void> {
   const node = parseVersion(probe.processVersion);
   if (!atLeast(node, MIN_NODE)) {
-    throw refuse(
-      'node_too_old',
-      `Node.js ${MIN_NODE} or newer is required; this is ${node?.text ?? probe.processVersion}.`,
-      'node',
-      `install Node.js ${MIN_NODE} or newer`,
-    );
+    throw refused({
+      code: 'node_too_old',
+      message: `Node.js ${MIN_NODE} or newer is required; this is ${node?.text ?? probe.processVersion}.`,
+      where: 'node',
+      next: `install Node.js ${MIN_NODE} or newer`,
+    });
   }
   if (!opts.checkGit) return;
 
@@ -61,21 +57,21 @@ export async function checkEnvironment(
   try {
     output = await probe.runGitVersion();
   } catch {
-    throw refuse(
-      'git_missing',
-      `git was not found; git ${MIN_GIT} or newer is required.`,
-      'git',
-      `install git ${MIN_GIT} or newer`,
-    );
+    throw refused({
+      code: 'git_missing',
+      message: `git was not found; git ${MIN_GIT} or newer is required.`,
+      where: 'git',
+      next: `install git ${MIN_GIT} or newer`,
+    });
   }
   const git = parseVersion(output);
   if (!atLeast(git, MIN_GIT)) {
-    throw refuse(
-      'git_too_old',
-      `git ${MIN_GIT} or newer is required; found ${git?.text ?? 'an unreadable version'}.`,
-      'git',
-      `update git to ${MIN_GIT} or newer`,
-    );
+    throw refused({
+      code: 'git_too_old',
+      message: `git ${MIN_GIT} or newer is required; found ${git?.text ?? 'an unreadable version'}.`,
+      where: 'git',
+      next: `update git to ${MIN_GIT} or newer`,
+    });
   }
 }
 

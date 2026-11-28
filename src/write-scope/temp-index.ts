@@ -17,7 +17,10 @@ function gitFailure(what: string, cwd: string, stderr: string): FactoryError {
 
 /** The stdout of a git command. A git failure throws `write_scope_git_failed`. */
 export function git(env: NodeJS.ProcessEnv, cwd: string, what: string, args: readonly string[], index?: string): string {
-  const result = runGit(env, cwd, args, index === undefined ? {} : { GIT_INDEX_FILE: index });
+  const result = runGit(env, cwd, args, {
+    profile: 'user',
+    extraEnv: index === undefined ? undefined : { GIT_INDEX_FILE: index },
+  });
   if (!result.ok) {
     throw gitFailure(what, cwd, result.stderr);
   }

@@ -13,7 +13,8 @@ import { isSlug, runFolderPath } from '../run-folder/path.js';
 import { findLatestRun } from '../run-state/find-run.js';
 import { STUB_BUILD_STEP } from '../run-state/stub-pipeline.js';
 import { worktreePath } from '../worktree/path.js';
-import { checkoutRoot, refuse, repoNameOf } from './checkout.js';
+import { refused } from '../platform/errors.js';
+import { checkoutRoot, repoNameOf } from './checkout.js';
 import type { CommandDef } from './router.js';
 
 /** What a test (or a later caller) can inject into the command; the rest comes from the real system. */
@@ -38,12 +39,12 @@ const DEFAULT_STAGES: ResumeRunOptions['stages'] = [
 function parseCap(value: string): number {
   const amount = /^\+\$(\d+(?:\.\d+)?)$/.exec(value)?.[1];
   if (amount === undefined || Number(amount) <= 0) {
-    throw refuse(
-      'cap_invalid',
-      `The --cap value "${value}" is not a plus sign and a dollar amount.`,
-      '--cap',
-      'Pass an increment such as --cap "+$2" (quote it, because $ is special in a shell).',
-    );
+    throw refused({
+      code: 'cap_invalid',
+      message: `The --cap value "${value}" is not a plus sign and a dollar amount.`,
+      where: '--cap',
+      next: 'Pass an increment such as --cap "+$2" (quote it, because $ is special in a shell).',
+    });
   }
   return Number(amount);
 }
@@ -60,12 +61,12 @@ export function createResumeCommand(options: Partial<ResumeCommandOptions> = {})
     run: async ({ positionals, values, cwd, packageVersion }) => {
       const ticket = positionals[0] ?? '';
       if (!isSlug(ticket)) {
-        throw refuse(
-          'ticket_invalid',
-          `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
-          'ticket',
-          'Pass the ticket key, for example `factory resume FE-123`.',
-        );
+        throw refused({
+          code: 'ticket_invalid',
+          message: `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
+          where: 'ticket',
+          next: 'Pass the ticket key, for example `factory resume FE-123`.',
+        });
       }
       const from = typeof values.from === 'string' ? values.from : undefined;
       const capIncrementUsd = typeof values.cap === 'string' ? parseCap(values.cap) : undefined;

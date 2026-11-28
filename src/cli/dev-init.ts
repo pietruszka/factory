@@ -5,10 +5,9 @@ import { stringify } from 'yaml';
 
 import { runDevInit } from '../dev/dev-init.js';
 import { resolveFactoryHome } from '../dev/home.js';
-import { FactoryError } from '../platform/errors.js';
+import { FactoryError, refused } from '../platform/errors.js';
 import { resolveFactoryPaths } from '../platform/paths.js';
 import { SAMPLE_TAGS, unpackTodoSandbox } from '../sandbox/todo-sandbox.js';
-import { refuse } from './checkout.js';
 import type { CommandDef } from './router.js';
 
 const KNOWN_TAGS = SAMPLE_TAGS.join(', ');
@@ -34,24 +33,24 @@ const repoConfigYaml = (sandboxPath: string): string =>
 /** The throwaway home from FACTORY_HOME. Plain errors from the dev-home rules become refusals (exit 2). */
 export function throwawayHome(env: NodeJS.ProcessEnv, command = 'dev-init --sample'): string {
   if (!env.FACTORY_HOME) {
-    throw refuse(
-      'dev_home_required',
-      `FACTORY_HOME is not set. ${command} only works in a throwaway factory home.`,
-      'FACTORY_HOME',
-      MAKE_HOME_NEXT,
-    );
+    throw refused({
+      code: 'dev_home_required',
+      message: `FACTORY_HOME is not set. ${command} only works in a throwaway factory home.`,
+      where: 'FACTORY_HOME',
+      next: MAKE_HOME_NEXT,
+    });
   }
   resolveFactoryPaths(env); // refuses a home or cache inside Documents, Desktop or Downloads (protected_folder)
   try {
     return resolveFactoryHome(env);
   } catch (error) {
     if (error instanceof FactoryError) throw error;
-    throw refuse(
-      'dev_home_invalid',
-      error instanceof Error ? error.message : String(error),
-      'FACTORY_HOME',
-      MAKE_HOME_NEXT,
-    );
+    throw refused({
+      code: 'dev_home_invalid',
+      message: error instanceof Error ? error.message : String(error),
+      where: 'FACTORY_HOME',
+      next: MAKE_HOME_NEXT,
+    });
   }
 }
 
@@ -71,12 +70,12 @@ export const devInitCommand: CommandDef = {
     const path = positionals[0];
 
     if (path !== undefined && tag !== undefined) {
-      throw refuse(
-        'invalid_usage',
-        'factory dev-init takes a path or --sample, not both.',
-        'dev-init',
-        'Run `factory dev-init <path>` to make the home, or `factory dev-init --sample todo-v0` after FACTORY_HOME is set.',
-      );
+      throw refused({
+        code: 'invalid_usage',
+        message: 'factory dev-init takes a path or --sample, not both.',
+        where: 'dev-init',
+        next: 'Run `factory dev-init <path>` to make the home, or `factory dev-init --sample todo-v0` after FACTORY_HOME is set.',
+      });
     }
 
     if (path !== undefined) {
@@ -88,25 +87,30 @@ export const devInitCommand: CommandDef = {
         };
       } catch (error) {
         if (error instanceof FactoryError) throw error;
-        throw refuse(
-          'dev_home_invalid',
-          error instanceof Error ? error.message : String(error),
-          path,
-          MAKE_HOME_NEXT,
-        );
+        throw refused({
+          code: 'dev_home_invalid',
+          message: error instanceof Error ? error.message : String(error),
+          where: path,
+          next: MAKE_HOME_NEXT,
+        });
       }
     }
 
     if (tag === undefined) {
-      throw refuse(
-        'sample_required',
-        'dev-init needs a path or --sample <tag>.',
-        'dev-init',
-        `Run \`factory dev-init <path>\` to make a throwaway home, or \`factory dev-init --sample todo-v0\`. Known samples: ${KNOWN_TAGS}.`,
-      );
+      throw refused({
+        code: 'sample_required',
+        message: 'dev-init needs a path or --sample <tag>.',
+        where: 'dev-init',
+        next: `Run \`factory dev-init <path>\` to make a throwaway home, or \`factory dev-init --sample todo-v0\`. Known samples: ${KNOWN_TAGS}.`,
+      });
     }
     if (!SAMPLE_TAGS.includes(tag)) {
-      throw refuse('sample_unknown', `Unknown sample "${tag}".`, `--sample ${tag}`, `Use one of: ${KNOWN_TAGS}.`);
+      throw refused({
+        code: 'sample_unknown',
+        message: `Unknown sample "${tag}".`,
+        where: `--sample ${tag}`,
+        next: `Use one of: ${KNOWN_TAGS}.`,
+      });
     }
 
     const home = throwawayHome(env);

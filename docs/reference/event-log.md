@@ -91,7 +91,7 @@ Every text column and every JSON payload is redacted before the row is written; 
 1. **Exact values.** Values of environment variables whose name contains `KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `PASS`, `AUTH` or `CREDENTIAL`, plus the `extraSecrets` the caller passes. Values shorter than 6 characters are skipped. The environment is read once, at open.
 2. **Patterns.** A best-effort scan for the prefixes `ghp_`, `gho_`, `ghu_`, `ghs_`, `github_pat_`, `sk-`, `AKIA`, `xoxb-`, `xoxp-`, `xoxa-` (followed by at least 8 token characters) and for PEM private-key blocks.
 
-The scan is not a guarantee: a secret in an unknown format that is not in the environment is stored as it is. Ticket text is not a column yet. When it is stored later (`ticket.json`), the pattern scan is skipped on that field and exact-value redaction of loaded secrets still applies. The probe has its own redaction (`src/probe/redact.ts`), which this does not replace.
+The scan is not a guarantee: a secret in an unknown format that is not in the environment is stored as it is. Ticket text is not a column yet. When it is stored later (`ticket.json`), the pattern scan is skipped on that field and exact-value redaction of loaded secrets still applies. The probe builds its own secret list (home path, person name, and env secrets), then calls this redactor, including the pattern scan.
 
 ## Permissions
 

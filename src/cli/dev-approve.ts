@@ -9,7 +9,8 @@ import { writeSecureFile } from '../run-folder/files.js';
 import { approvalHash } from '../run-folder/progress.js';
 import { isSlug, runFolderPath } from '../run-folder/path.js';
 import { findOpenRun } from '../run-state/find-run.js';
-import { checkoutRoot, refuse, repoNameOf } from './checkout.js';
+import { refused } from '../platform/errors.js';
+import { checkoutRoot, repoNameOf } from './checkout.js';
 import { throwawayHome } from './dev-init.js';
 import type { CommandDef } from './router.js';
 
@@ -31,12 +32,12 @@ export const devApproveCommand: CommandDef = {
   run: ({ positionals, cwd, packageVersion }) => {
     const ticket = positionals[0] ?? '';
     if (!isSlug(ticket)) {
-      throw refuse(
-        'ticket_invalid',
-        `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
-        'ticket',
-        'Pass the ticket key, for example `factory dev-approve FE-123`.',
-      );
+      throw refused({
+        code: 'ticket_invalid',
+        message: `The ticket "${ticket}" is not a valid ticket key. Use letters, digits, ".", "_" or "-" only.`,
+        where: 'ticket',
+        next: 'Pass the ticket key, for example `factory dev-approve FE-123`.',
+      });
     }
     const env = process.env;
     throwawayHome(env, 'dev-approve');
@@ -44,21 +45,21 @@ export const devApproveCommand: CommandDef = {
 
     const checkout = checkoutRoot(env, cwd, 'dev-approve');
     if (resolveComparablePath(checkout) !== resolveComparablePath(join(sandboxRoot, SANDBOX_REPO))) {
-      throw refuse(
-        'dev_repo_not_sandbox',
-        `${checkout} is not the sandbox repo, so dev-approve will not approve a run of it.`,
-        checkout,
-        `Run \`factory dev-approve ${ticket}\` from ${join(sandboxRoot, SANDBOX_REPO)}, the sample unpacked by \`factory dev-init --sample\`.`,
-      );
+      throw refused({
+        code: 'dev_repo_not_sandbox',
+        message: `${checkout} is not the sandbox repo, so dev-approve will not approve a run of it.`,
+        where: checkout,
+        next: `Run \`factory dev-approve ${ticket}\` from ${join(sandboxRoot, SANDBOX_REPO)}, the sample unpacked by \`factory dev-init --sample\`.`,
+      });
     }
     const repo = repoNameOf(env, checkout);
 
-    const notFound = refuse(
-      'run_not_found',
-      `There is no running or stopped run for ${ticket} in ${repo}. Nothing was approved.`,
-      ticket,
-      'Check the ticket and run the command from the sandbox checkout the run belongs to.',
-    );
+    const notFound = refused({
+      code: 'run_not_found',
+      message: `There is no running or stopped run for ${ticket} in ${repo}. Nothing was approved.`,
+      where: ticket,
+      next: 'Check the ticket and run the command from the sandbox checkout the run belongs to.',
+    });
     if (!existsSync(dbPath)) throw notFound;
     const reader = openEventLogReadOnly({ env });
     try {
@@ -67,22 +68,22 @@ export const devApproveCommand: CommandDef = {
 
       const commands = reader.query('SELECT command FROM processes WHERE run_id = ?', runId).map((row) => String(row.command));
       if (commands.some((command) => !command.includes(FAKE_WORKER_SCRIPT))) {
-        throw refuse(
-          'dev_worker_not_fake',
-          `Run ${runId} has a process that is not the fake worker, so dev-approve will not approve it.`,
-          `processes (${runId})`,
-          'dev-approve only works for runs whose worker is the fake worker.',
-        );
+        throw refused({
+          code: 'dev_worker_not_fake',
+          message: `Run ${runId} has a process that is not the fake worker, so dev-approve will not approve it.`,
+          where: `processes (${runId})`,
+          next: 'dev-approve only works for runs whose worker is the fake worker.',
+        });
       }
 
       const planPath = join(runFolderPath(env, repo, ticket), 'plan.md');
       if (!existsSync(planPath)) {
-        throw refuse(
-          'plan_missing',
-          `Run ${runId} has no plan.md, so there is nothing to approve.`,
-          planPath,
-          'Plan the run first, then run dev-approve again.',
-        );
+        throw refused({
+          code: 'plan_missing',
+          message: `Run ${runId} has no plan.md, so there is nothing to approve.`,
+          where: planPath,
+          next: 'Plan the run first, then run dev-approve again.',
+        });
       }
       const planHash = approvalHash(readFileSync(planPath, 'utf8'));
 

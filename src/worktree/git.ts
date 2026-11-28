@@ -7,18 +7,33 @@ export interface GitResult {
   stderr: string;
 }
 
+/** How much of the user's git config the command may see. */
+type GitProfile = 'user' | 'isolated';
+
+export interface RunGitOptions {
+  /**
+   * `user`: the work repo. Reads `$HOME/.gitconfig`. No system config, no prompts.
+   * shortcut: repo hooks and core.fsmonitor still run, when FAC-54 item 1 lands in this runner.
+   * `isolated`: sandbox unpack and config/load. No global config, hooks off.
+   */
+  profile: GitProfile;
+  /** Extra git variables such as `GIT_INDEX_FILE`. */
+  extraEnv?: Readonly<Record<string, string>>;
+}
+
 /**
- * Runs git in `cwd` with a minimal environment: no system config, no prompts. The caller must
- * have checked that `cwd` exists. Never throws on a git failure. `extraEnv` adds git variables such as
- * `GIT_INDEX_FILE` to that minimal environment.
+ * Runs git in `cwd` with the named profile. The caller must have checked that `cwd` exists.
+ * Never throws on a git failure.
  */
 export function runGit(
   env: NodeJS.ProcessEnv,
   cwd: string,
   args: readonly string[],
-  extraEnv: Readonly<Record<string, string>> = {},
+  options: RunGitOptions,
 ): GitResult {
-  const result = spawnSync('git', [...args], {
+  const isolated = options.profile === 'isolated';
+  const gitArgs = isolated ? ['-c', 'core.hooksPath=/dev/null', ...args] : [...args];
+  const result = spawnSync('git', gitArgs, {
     cwd,
     encoding: 'utf8',
     env: {
@@ -26,7 +41,8 @@ export function runGit(
       HOME: env.HOME ?? '',
       GIT_CONFIG_NOSYSTEM: '1',
       GIT_TERMINAL_PROMPT: '0',
-      ...extraEnv,
+      ...(isolated ? { GIT_CONFIG_GLOBAL: '/dev/null' } : {}),
+      ...options.extraEnv,
     },
   });
   const failed = result.error !== undefined || result.status !== 0;
