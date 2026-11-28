@@ -1,6 +1,5 @@
 # Quality gates: typecheck, lint, test, test:l3, build.
-#
-# shortcut: ubuntu job waits on FAC-55, add it when the suite passes on Linux.
+# The same gates run on ubuntu-latest and macos-latest.
 
 name: CI
 
@@ -13,6 +12,39 @@ permissions:
   contents: read
 
 jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Test L3
+        run: npm run test:l3
+
+      - name: Build
+        run: npm run build
+
   macos:
     runs-on: macos-latest
     timeout-minutes: 20

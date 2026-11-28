@@ -39,7 +39,7 @@ npm run docs:build
 
 ## `check`
 
-Runs the gates in order: `typecheck`, `lint`, `test`, `test:l3`, `build`, `docs:build`. It stops at the first failure and exits with that gate's exit code. When every gate passes it exits 0. CI runs the same gates (without `docs:build`, which stays on the docs workflow) on every pull request and every push to `main`.
+Runs the gates in order: `typecheck`, `lint`, `test`, `test:l3`, `build`, `docs:build`. It stops at the first failure and exits with that gate's exit code. When every gate passes it exits 0. CI runs the same gates (without `docs:build`, which stays on the docs workflow) on `ubuntu-latest` and `macos-latest` for every pull request and every push to `main`.
 
 ## `build`
 
